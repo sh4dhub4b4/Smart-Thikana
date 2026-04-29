@@ -1,0 +1,45 @@
+/**
+ * Favorites — listings the tenant has saved.
+ */
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Listing } from "@/lib/listings";
+import ListingCard from "@/components/listings/ListingCard";
+import { useFavorites } from "@/hooks/useFavorites";
+import { Heart } from "lucide-react";
+
+export default function Favorites() {
+  const { user } = useAuth();
+  const { favoriteIds, toggle } = useFavorites();
+  const [listings, setListings] = useState<Listing[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      if (!user) return;
+      const ids = Array.from(favoriteIds);
+      if (ids.length === 0) { setListings([]); return; }
+      const { data } = await supabase.from("listings").select("*").in("id", ids);
+      setListings((data as Listing[]) ?? []);
+    })();
+  }, [user, favoriteIds]);
+
+  return (
+    <div className="container py-8">
+      <h1 className="font-display text-3xl font-bold mb-1">Saved Listings</h1>
+      <p className="text-muted-foreground mb-8">{listings.length} saved.</p>
+      {listings.length === 0 ? (
+        <div className="text-center py-20 border-2 border-dashed rounded-lg">
+          <Heart className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+          <p className="text-muted-foreground">You haven't saved any listings yet.</p>
+        </div>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {listings.map(l => (
+            <ListingCard key={l.id} listing={l} isFavorite={favoriteIds.has(l.id)} onToggleFavorite={toggle} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
