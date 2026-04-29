@@ -71,7 +71,12 @@ export default function ListingForm() {
     if (!parsed.success) { toast.error(parsed.error.errors[0].message); return; }
 
     const images = imagesText.split(/\n+/).map(s => s.trim()).filter(Boolean).slice(0, 10);
-    const payload = { ...parsed.data, property_type: propertyType, images, is_active: active, landlord_id: user.id };
+    const d = parsed.data;
+    const payload = {
+      title: d.title, location: d.location, description: d.description,
+      price: d.price, bedrooms: d.bedrooms, bathrooms: d.bathrooms, area_sqft: d.area_sqft,
+      property_type: propertyType, images, is_active: active, landlord_id: user.id,
+    };
     setSaving(true);
     const { error } = editing
       ? await supabase.from("listings").update(payload).eq("id", id!)
