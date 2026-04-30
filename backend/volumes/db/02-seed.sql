@@ -1,0 +1,19 @@
+-- =============================================================================
+-- Optional sample data for local development.
+-- Safe to delete this file — the app works fine with an empty DB.
+-- These INSERTs only run on FIRST boot (when the data dir is empty).
+-- =============================================================================
+
+-- We don't insert auth.users here because GoTrue needs to hash passwords.
+-- Instead, sign up two accounts via the running app, then run the snippet
+-- below from Studio (http://localhost:3000) → SQL editor, replacing the UUIDs:
+--
+--   INSERT INTO public.user_roles (user_id, role)
+--   VALUES ('<landlord-uuid>', 'landlord'),
+--          ('<tenant-uuid>',   'tenant');
+--
+--   INSERT INTO public.listings (landlord_id, title, description, price, location, property_type, bedrooms, bathrooms, images)
+--   VALUES ('<landlord-uuid>', 'Sunny 2BR in Dhanmondi',
+--           'Bright corner unit with balcony.', 25000, 'Dhanmondi, Dhaka',
+--           'apartment', 2, 2,
+--           ARRAY['https://images.unsplash.com/photo-1505691938895-1758d7feb511']);
