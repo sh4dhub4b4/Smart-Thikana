@@ -1,0 +1,42 @@
+# =============================================================================
+# Kong declarative config — single API gateway in front of all Supabase services
+# =============================================================================
+_format_version: "2.1"
+
+consumers:
+  - username: anon
+    keyauth_credentials:
+      - key: ${ANON_KEY}
+  - username: service_role
+    keyauth_credentials:
+      - key: ${SERVICE_ROLE_KEY}
+
+services:
+  - name: auth-v1
+    url: http://auth:9999/
+    routes:
+      - name: auth-v1
+        strip_path: true
+        paths: ["/auth/v1/"]
+
+  - name: rest-v1
+    url: http://rest:3000/
+    routes:
+      - name: rest-v1
+        strip_path: true
+        paths: ["/rest/v1/"]
+    plugins:
+      - name: cors
+      - name: key-auth
+        config: { hide_credentials: true }
+
+  - name: realtime-v1
+    url: http://realtime:4000/socket/
+    routes:
+      - name: realtime-v1
+        strip_path: true
+        paths: ["/realtime/v1/"]
+    plugins:
+      - name: cors
+      - name: key-auth
+        config: { hide_credentials: true }
