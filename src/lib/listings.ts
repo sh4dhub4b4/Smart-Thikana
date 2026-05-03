@@ -2,6 +2,8 @@
  * Shared types matching the public schema.
  */
 export type PropertyType = "apartment" | "house" | "studio" | "room" | "commercial";
+export type CityCorp = "none" | "DNCC" | "DSCC";
+export type BuildingType = "residential_flat" | "standalone_house" | "commercial_studio" | "sublet_mess";
 
 export interface Listing {
   id: string;
@@ -17,6 +19,26 @@ export interface Listing {
   images: string[];
   is_active: boolean;
   created_at: string;
+
+  // BD administrative + address fields (added in 2026-05 migration)
+  division: string | null;
+  district: string | null;
+  city_corporation: CityCorp;
+  thana: string | null;
+  ward_number: number | null;
+  zone: string | null;
+  area_moholla: string | null;
+  block_sector: string | null;
+  road_no: string | null;
+  avenue_lane: string | null;
+  holding_number: string | null;
+  house_name: string | null;
+  floor_unit: string | null;
+  landmarks: string | null;
+  geo_location: string | null;
+  building_type: BuildingType;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
@@ -34,3 +56,22 @@ export const fmtBDT = (n: number) =>
 /** Stable placeholder image for a listing without images */
 export const placeholderImage = (seed: string) =>
   `https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=70&sig=${encodeURIComponent(seed)}`;
+
+/**
+ * Build a human-readable address string from the structured BD fields.
+ * Falls back to the legacy `location` field if structured data is missing.
+ */
+export function formatAddress(l: Pick<Listing,
+  "house_name" | "road_no" | "area_moholla" | "block_sector" | "thana" | "district" | "division" | "location"
+>): string {
+  const parts = [
+    l.house_name,
+    l.road_no ? `Road ${l.road_no}` : null,
+    l.area_moholla,
+    l.block_sector,
+    l.thana,
+    l.district,
+    l.division,
+  ].filter(Boolean);
+  return parts.length ? parts.join(", ") : (l.location || "Address not provided");
+}

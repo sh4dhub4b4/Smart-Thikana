@@ -136,8 +136,10 @@ export default function ListingDetail() {
                   {starting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageSquare className="h-4 w-4 mr-2" />}
                   Message Landlord
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => toast.info(landlord?.phone ? `Call ${landlord.phone}` : "Phone not provided")}>
-                  <Phone className="h-4 w-4 mr-2" /> Call
+                <Button asChild variant="outline" className="w-full" disabled={!landlord?.phone}>
+                  {landlord?.phone
+                    ? <a href={`tel:${landlord.phone}`}><Phone className="h-4 w-4 mr-2" /> Call {landlord.phone}</a>
+                    : <span><Phone className="h-4 w-4 mr-2" /> Phone not provided</span>}
                 </Button>
               </div>
             ) : !user ? (

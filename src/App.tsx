@@ -20,6 +20,8 @@ import Messages from "./pages/Messages";
 import Payment from "./pages/Payment";
 import Receipt from "./pages/Receipt";
 import Profile from "./pages/Profile";
+import Kyc from "./pages/Kyc";
+import Feedback from "./pages/Feedback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +49,8 @@ const App = () => (
               <Route path="/payment/:agreementId" element={<ProtectedRoute requireRole="tenant"><Payment /></ProtectedRoute>} />
               <Route path="/receipt/:id" element={<ProtectedRoute><Receipt /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/kyc" element={<ProtectedRoute><Kyc /></ProtectedRoute>} />
+              <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
