@@ -1,7 +1,9 @@
 /**
  * Profile — edit name, phone, bio, avatar URL, business name.
+ * Also surfaces a Call button (tel:) and a link to the KYC page.
  */
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck, Phone, Copy } from "lucide-react";
 
 export default function Profile() {
   const { user, profile, role, refreshProfile } = useAuth();
