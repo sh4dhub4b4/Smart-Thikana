@@ -49,17 +49,39 @@ export default function Profile() {
     setSaving(false);
   };
 
+  /** Copy the current user's UUID — useful for sharing for peer feedback. */
+  const copyId = async () => {
+    if (!user) return;
+    await navigator.clipboard.writeText(user.id);
+    toast.success("User ID copied — share it for peer reviews");
+  };
+
   return (
     <div className="container max-w-2xl py-8">
       <h1 className="font-display text-3xl font-bold mb-6">Your Profile</h1>
       <Card className="p-6 space-y-5">
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16"><AvatarImage src={avatarUrl} /><AvatarFallback className="bg-primary text-primary-foreground">{fullName?.[0] ?? "U"}</AvatarFallback></Avatar>
-          <div>
-            <p className="font-semibold">{user?.email}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold truncate">{user?.email}</p>
             <p className="text-xs uppercase tracking-wider text-primary">{role}</p>
+            <button onClick={copyId} className="mt-1 text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+              <Copy className="h-3 w-3" /> Copy my user ID
+            </button>
           </div>
         </div>
+
+        {/* Quick actions */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/kyc"><ShieldCheck className="h-4 w-4 mr-2" /> KYC verification</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm" disabled={!phone}>
+            {phone ? <a href={`tel:${phone}`}><Phone className="h-4 w-4 mr-2" /> Test call</a>
+                   : <span><Phone className="h-4 w-4 mr-2" /> Add phone first</span>}
+          </Button>
+        </div>
+
         <div><Label>Full name</Label><Input value={fullName} onChange={e => setFullName(e.target.value)} /></div>
         <div><Label>Phone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+880..." /></div>
         <div><Label>Avatar URL</Label><Input value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)} placeholder="https://..." /></div>
