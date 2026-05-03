@@ -3,7 +3,7 @@
  * mygov.bd-style green/red accent stripe.
  */
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Building2, LogOut, MessageSquare, Heart, LayoutDashboard, User } from "lucide-react";
+import { Building2, LogOut, MessageSquare, Heart, LayoutDashboard, User, ShieldCheck, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -23,11 +23,13 @@ export default function Navbar() {
     { to: "/tenant", label: "Browse", icon: Building2 },
     { to: "/favorites", label: "Saved", icon: Heart },
     { to: "/messages", label: "Messages", icon: MessageSquare },
+    { to: "/feedback", label: "Feedback", icon: Star },
   ];
   const landlordLinks = [
     { to: "/landlord", label: "Dashboard", icon: LayoutDashboard },
     { to: "/landlord/listings", label: "My Listings", icon: Building2 },
     { to: "/messages", label: "Messages", icon: MessageSquare },
+    { to: "/feedback", label: "Feedback", icon: Star },
   ];
   const links = role === "landlord" ? landlordLinks : role === "tenant" ? tenantLinks : [];
 
@@ -79,6 +81,9 @@ export default function Navbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
                   <User className="mr-2 h-4 w-4" /> Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/kyc")}>
+                  <ShieldCheck className="mr-2 h-4 w-4" /> Identity / KYC
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={async () => { await signOut(); navigate("/"); }}>
                   <LogOut className="mr-2 h-4 w-4" /> Sign out
