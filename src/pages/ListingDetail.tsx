@@ -18,6 +18,17 @@ import { toast } from "sonner";
 
 interface LandlordInfo { id: string; full_name: string; phone: string | null; avatar_url: string | null; business_name: string | null; }
 
+/** Tiny presentational row for the structured property-details card. */
+function DetailRow({ label, value }: { label: string; value: React.ReactNode | null | undefined }) {
+  if (!value) return null;
+  return (
+    <div className="flex justify-between gap-3 py-1 border-b border-border/40 last:border-0">
+      <dt className="text-muted-foreground text-xs uppercase tracking-wider">{label}</dt>
+      <dd className="font-medium text-right">{value}</dd>
+    </div>
+  );
+}
+
 export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
