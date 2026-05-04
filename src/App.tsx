@@ -22,6 +22,8 @@ import Receipt from "./pages/Receipt";
 import Profile from "./pages/Profile";
 import Kyc from "./pages/Kyc";
 import Feedback from "./pages/Feedback";
+import RentalHistory from "./pages/RentalHistory";
+import TenantLookup from "./pages/TenantLookup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +53,11 @@ const App = () => (
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/kyc" element={<ProtectedRoute><Kyc /></ProtectedRoute>} />
               <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
+              {/* Tenant rental history (auto-generated from completed payments) */}
+              <Route path="/history" element={<ProtectedRoute requireRole="tenant"><RentalHistory /></ProtectedRoute>} />
+              {/* Landlord-only: look up & view a specific tenant's history */}
+              <Route path="/history/:userId" element={<ProtectedRoute><RentalHistory /></ProtectedRoute>} />
+              <Route path="/tenant-lookup" element={<ProtectedRoute requireRole="landlord"><TenantLookup /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

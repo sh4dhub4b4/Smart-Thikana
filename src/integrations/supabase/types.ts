@@ -518,9 +518,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      rental_history: {
+        Row: {
+          area_moholla: string | null
+          district: string | null
+          division: string | null
+          landlord_id: string | null
+          listing_id: string | null
+          listing_location: string | null
+          listing_title: string | null
+          payment_id: string | null
+          receipt_number: string | null
+          rent_paid: number | null
+          rented_at: string | null
+          tenant_id: string | null
+          thana: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      get_tenant_rental_history: {
+        Args: { _tenant_id: string }
+        Returns: {
+          area_moholla: string
+          district: string
+          division: string
+          listing_id: string
+          listing_location: string
+          listing_title: string
+          payment_id: string
+          receipt_number: string
+          rent_paid: number
+          rented_at: string
+          thana: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

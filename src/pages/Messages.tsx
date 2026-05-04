@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 import { fmtBDT } from "@/lib/listings";
 import { toast } from "sonner";
 
@@ -33,9 +34,13 @@ interface AgreementRow { id: string; status: "pending" | "accepted" | "rejected"
 
 export default function Messages() {
   const { user, role } = useAuth();
+  const { clearUnread } = useMessageNotifications();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const activeId = params.get("c");
+
+  // Clear the unread badge as soon as the user opens this page.
+  useEffect(() => { clearUnread(); }, [clearUnread, activeId]);
 
   const [conversations, setConversations] = useState<ConvRow[]>([]);
   const [messages, setMessages] = useState<MsgRow[]>([]);
@@ -189,7 +194,12 @@ export default function Messages() {
                     <AvatarFallback>{other?.full_name?.[0] ?? "?"}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate">{other?.full_name}</p>
+                    <p className="font-semibold text-sm truncate">
+                      {other?.full_name || "Unknown user"}
+                      <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {role === "tenant" ? "Landlord" : "Tenant"}
+                      </span>
+                    </p>
                     <p className="text-xs text-muted-foreground truncate">{active.listing?.title}</p>
                   </div>
                 </div>

@@ -3,18 +3,22 @@
  * mygov.bd-style green/red accent stripe.
  */
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Building2, LogOut, MessageSquare, Heart, LayoutDashboard, User, ShieldCheck, Star } from "lucide-react";
+import { Building2, LogOut, MessageSquare, Heart, LayoutDashboard, User, ShieldCheck, Star, History, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 
 export default function Navbar() {
   const { user, profile, role, signOut } = useAuth();
   const navigate = useNavigate();
+  // Realtime unread message counter (and toast/browser-notification side-effects).
+  const { unread } = useMessageNotifications();
 
   const initials = (profile?.full_name || user?.email || "U")
     .split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
@@ -22,13 +26,15 @@ export default function Navbar() {
   const tenantLinks = [
     { to: "/tenant", label: "Browse", icon: Building2 },
     { to: "/favorites", label: "Saved", icon: Heart },
-    { to: "/messages", label: "Messages", icon: MessageSquare },
+    { to: "/messages", label: "Messages", icon: MessageSquare, badge: unread },
+    { to: "/history", label: "History", icon: History },
     { to: "/feedback", label: "Feedback", icon: Star },
   ];
   const landlordLinks = [
     { to: "/landlord", label: "Dashboard", icon: LayoutDashboard },
     { to: "/landlord/listings", label: "My Listings", icon: Building2 },
-    { to: "/messages", label: "Messages", icon: MessageSquare },
+    { to: "/messages", label: "Messages", icon: MessageSquare, badge: unread },
+    { to: "/tenant-lookup", label: "Tenant lookup", icon: Search },
     { to: "/feedback", label: "Feedback", icon: Star },
   ];
   const links = role === "landlord" ? landlordLinks : role === "tenant" ? tenantLinks : [];
@@ -51,10 +57,13 @@ export default function Navbar() {
           {links.map((l) => (
             <NavLink key={l.to} to={l.to}
               className={({ isActive }) =>
-                `flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                `relative flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors
                 ${isActive ? "bg-primary-soft text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`
               }>
               <l.icon className="h-4 w-4" /> {l.label}
+              {"badge" in l && l.badge ? (
+                <Badge variant="destructive" className="ml-1 h-4 min-w-4 px-1 text-[10px]">{l.badge}</Badge>
+              ) : null}
             </NavLink>
           ))}
         </nav>
