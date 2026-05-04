@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck, Phone, Copy } from "lucide-react";
+import { Loader2, ShieldCheck, Phone, Copy, History } from "lucide-react";
 
 export default function Profile() {
   const { user, profile, role, refreshProfile } = useAuth();
@@ -65,10 +65,21 @@ export default function Profile() {
           <div className="flex-1 min-w-0">
             <p className="font-semibold truncate">{user?.email}</p>
             <p className="text-xs uppercase tracking-wider text-primary">{role}</p>
-            <button onClick={copyId} className="mt-1 text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-              <Copy className="h-3 w-3" /> Copy my user ID
-            </button>
           </div>
+        </div>
+
+        {/* User ID — visible + copyable. Used for peer feedback & tenant lookup. */}
+        <div className="rounded-md border bg-muted/40 p-3">
+          <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">Your User ID</Label>
+          <div className="mt-1 flex items-center gap-2">
+            <code className="flex-1 text-xs break-all font-mono">{user?.id}</code>
+            <Button type="button" size="sm" variant="outline" onClick={copyId}>
+              <Copy className="h-3.5 w-3.5 mr-1" /> Copy
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Share this ID with {role === "tenant" ? "landlords so they can review you and look up your rental history" : "tenants so they can review you"}.
+          </p>
         </div>
 
         {/* Quick actions */}
@@ -76,10 +87,15 @@ export default function Profile() {
           <Button asChild variant="outline" size="sm">
             <Link to="/kyc"><ShieldCheck className="h-4 w-4 mr-2" /> KYC verification</Link>
           </Button>
-          <Button asChild variant="outline" size="sm" disabled={!phone}>
-            {phone ? <a href={`tel:${phone}`}><Phone className="h-4 w-4 mr-2" /> Test call</a>
-                   : <span><Phone className="h-4 w-4 mr-2" /> Add phone first</span>}
-          </Button>
+          {role === "tenant" ? (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/history"><History className="h-4 w-4 mr-2" /> My rental history</Link>
+            </Button>
+          ) : (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/tenant-lookup"><History className="h-4 w-4 mr-2" /> Look up tenant</Link>
+            </Button>
+          )}
         </div>
 
         <div><Label>Full name</Label><Input value={fullName} onChange={e => setFullName(e.target.value)} /></div>
