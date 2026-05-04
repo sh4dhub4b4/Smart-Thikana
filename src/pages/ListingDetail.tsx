@@ -10,7 +10,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { Listing, fmtBDT, placeholderImage } from "@/lib/listings";
+import { Listing, fmtBDT, placeholderImage, formatAddress } from "@/lib/listings";
+import { CITY_CORPS, BUILDING_TYPES } from "@/lib/bd-locations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { toast } from "sonner";
@@ -87,8 +88,8 @@ export default function ListingDetail() {
               <div>
                 <Badge variant="secondary" className="mb-2 capitalize">{listing.property_type}</Badge>
                 <h1 className="font-display text-3xl font-bold">{listing.title}</h1>
-                <div className="flex items-center gap-1 text-muted-foreground mt-1">
-                  <MapPin className="h-4 w-4" /> {listing.location}
+                <div className="flex items-start gap-1 text-muted-foreground mt-1">
+                  <MapPin className="h-4 w-4 mt-1 flex-shrink-0" /> <span>{formatAddress(listing)}</span>
                 </div>
               </div>
               {role === "tenant" && (
@@ -103,6 +104,43 @@ export default function ListingDetail() {
               <Card className="p-3 text-center"><Bath className="h-5 w-5 mx-auto text-primary mb-1" /><div className="text-sm font-semibold">{listing.bathrooms} Baths</div></Card>
               <Card className="p-3 text-center"><Maximize className="h-5 w-5 mx-auto text-primary mb-1" /><div className="text-sm font-semibold">{listing.area_sqft || "—"} sqft</div></Card>
             </div>
+
+            {/* Full structured address & classification — every detail the landlord
+                entered is shown here so tenants can verify what they're renting. */}
+            <Card className="mt-6 p-4">
+              <h2 className="font-display text-lg font-semibold mb-3">Property details</h2>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <DetailRow label="Building type" value={BUILDING_TYPES.find(b => b.value === listing.building_type)?.label} />
+                <DetailRow label="Division" value={listing.division} />
+                <DetailRow label="District" value={listing.district} />
+                <DetailRow label="Thana / PS" value={listing.thana} />
+                <DetailRow label="City Corporation" value={CITY_CORPS.find(c => c.value === listing.city_corporation)?.label} />
+                <DetailRow label="Ward number" value={listing.ward_number?.toString()} />
+                <DetailRow label="Zone" value={listing.zone} />
+                <DetailRow label="Area / Moholla" value={listing.area_moholla} />
+                <DetailRow label="Block / Sector" value={listing.block_sector} />
+                <DetailRow label="Road no" value={listing.road_no} />
+                <DetailRow label="Avenue / Lane" value={listing.avenue_lane} />
+                <DetailRow label="Holding number" value={listing.holding_number} />
+                <DetailRow label="House name / no" value={listing.house_name} />
+                <DetailRow label="Floor & unit" value={listing.floor_unit} />
+                <DetailRow label="Landmarks" value={listing.landmarks} />
+                <DetailRow label="GPS / Plus code" value={listing.geo_location} />
+                {listing.latitude && listing.longitude && (
+                  <DetailRow
+                    label="Coordinates"
+                    value={
+                      <a
+                        href={`https://www.google.com/maps?q=${listing.latitude},${listing.longitude}`}
+                        target="_blank" rel="noreferrer" className="text-primary underline"
+                      >
+                        {listing.latitude.toFixed(5)}, {listing.longitude.toFixed(5)}
+                      </a>
+                    }
+                  />
+                )}
+              </dl>
+            </Card>
 
             <div className="mt-6">
               <h2 className="font-display text-lg font-semibold mb-2">About this property</h2>
