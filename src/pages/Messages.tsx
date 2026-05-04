@@ -194,7 +194,12 @@ export default function Messages() {
                     <AvatarFallback>{other?.full_name?.[0] ?? "?"}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate">{other?.full_name}</p>
+                    <p className="font-semibold text-sm truncate">
+                      {other?.full_name || "Unknown user"}
+                      <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {role === "tenant" ? "Landlord" : "Tenant"}
+                      </span>
+                    </p>
                     <p className="text-xs text-muted-foreground truncate">{active.listing?.title}</p>
                   </div>
                 </div>
