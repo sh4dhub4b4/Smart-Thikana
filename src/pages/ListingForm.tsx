@@ -258,13 +258,15 @@ export default function ListingForm() {
               </Select>
             </div>
             <div><Label>District *</Label>
-              <Select value={district} onValueChange={(v) => { setDistrict(v); setThana(""); }} disabled={!division}>
+              {/* Keep enabled if the field already has a value (edit mode), so
+                  the saved selection isn't blanked while the cascade reloads. */}
+              <Select value={district} onValueChange={(v) => { setDistrict(v); setThana(""); }} disabled={!division && !district}>
                 <SelectTrigger><SelectValue placeholder={division ? "Select district" : "Pick division first"} /></SelectTrigger>
                 <SelectContent>{districts.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div><Label>Thana / PS *</Label>
-              <Select value={thana} onValueChange={setThana} disabled={!district}>
+              <Select value={thana} onValueChange={setThana} disabled={!district && !thana}>
                 <SelectTrigger><SelectValue placeholder={district ? "Select thana" : "Pick district first"} /></SelectTrigger>
                 <SelectContent>{thanas.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}</SelectContent>
               </Select>
