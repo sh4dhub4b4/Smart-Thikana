@@ -1,18 +1,19 @@
 /**
- * useMessageNotifications — global hook that:
- *   1. Subscribes to all incoming `messages` rows (RLS limits us to our own
- *      conversations) via Supabase Realtime.
- *   2. Maintains an unread counter in React state, which the Navbar reads
- *      to render a badge on the Messages icon.
- *   3. Pops a toast for each new message and (if the user has granted
- *      Notification permission) shows a browser push notification.
+ * useMessageNotifications — global, app-wide message-notification machinery.
  *
- * The unread counter is reset whenever the user opens /messages — the
- * Messages page calls `clearUnread()` on mount.
+ * SPLIT INTO TWO HOOKS to avoid double-firing:
  *
- * NOTE: This is best-effort, in-app notification only. True background push
- * (when the tab is closed) requires a service worker + a push provider
- * (FCM/APNs) and a server function — out of scope for the MVP.
+ *   1. `useMessageNotificationsRoot()` — MUST be called exactly ONCE
+ *      (we mount it in <Navbar />). It owns the realtime subscription,
+ *      pops toasts, and shows browser notifications.
+ *
+ *   2. `useMessageNotifications()` — read-only hook for any component
+ *      that needs the unread counter or a `clearUnread()` function
+ *      (e.g. the Navbar badge, the Messages page).
+ *
+ * Why this split: previously both Navbar and the Messages page called the
+ * same hook, which subscribed twice → every incoming message produced two
+ * toasts and double-incremented the badge.
  */
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -20,19 +21,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+// ── Module-level singleton state ─────────────────────────────────────────────
+// Shared across every component that imports this module. React state in each
+// consumer is kept in sync via the `listeners` set.
 let globalUnread = 0;
 const listeners = new Set<(n: number) => void>();
-const setGlobal = (n: number) => { globalUnread = n; listeners.forEach(l => l(n)); };
+const setGlobal = (n: number) => {
+  globalUnread = n;
+  listeners.forEach((l) => l(n));
+};
 
+/** Read-only hook: returns the current unread count + a setter to clear it. */
 export function useMessageNotifications() {
-  const { user } = useAuth();
   const [unread, setUnread] = useState(globalUnread);
-  const navigate = useNavigate();
-
   useEffect(() => {
     listeners.add(setUnread);
     return () => { listeners.delete(setUnread); };
   }, []);
+  const clearUnread = useCallback(() => setGlobal(0), []);
+  return { unread, clearUnread };
+}
+
+/**
+ * Root hook: owns the realtime subscription. Call ONCE at the top of the app
+ * (we do this from the Navbar, which is mounted on every authenticated page).
+ */
+export function useMessageNotificationsRoot() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Ask the browser for notification permission once.
   useEffect(() => {
@@ -41,8 +57,8 @@ export function useMessageNotifications() {
     }
   }, []);
 
-  // Subscribe to ALL message inserts; RLS ensures we only see ones that
-  // belong to conversations we participate in.
+  // Subscribe to ALL message inserts; RLS limits us to conversations we
+  // participate in, so this is safe and efficient.
   useEffect(() => {
     if (!user) return;
 
@@ -83,9 +99,9 @@ export function useMessageNotifications() {
               new Notification(`Bashabari — ${name}`, {
                 body: msg.content.slice(0, 120),
                 icon: "/placeholder.svg",
-                tag: msg.conversation_id, // collapses repeated msgs from same convo
+                tag: msg.conversation_id, // collapses repeats from the same convo
               });
-            } catch {/* ignore */}
+            } catch { /* ignore */ }
           }
         }
       )
@@ -93,7 +109,4 @@ export function useMessageNotifications() {
 
     return () => { supabase.removeChannel(channel); };
   }, [user, navigate]);
-
-  const clearUnread = useCallback(() => setGlobal(0), []);
-  return { unread, clearUnread };
 }

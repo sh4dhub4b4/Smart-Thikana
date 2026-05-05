@@ -25,8 +25,12 @@ export default function Onboarding() {
   const choose = async () => {
     if (!user) return;
     setSaving(true);
+    // Idempotent — if a row already exists for this user (e.g. they reopened
+    // onboarding) we silently ignore the duplicate-key error.
     const { error } = await supabase.from("user_roles").insert({ user_id: user.id, role: picked });
-    if (error) { toast.error(error.message); setSaving(false); return; }
+    if (error && !error.message.toLowerCase().includes("duplicate")) {
+      toast.error(error.message); setSaving(false); return;
+    }
     sessionStorage.removeItem("bashabari:intendedRole");
     await refreshProfile();
     navigate(picked === "landlord" ? "/landlord" : "/tenant", { replace: true });
