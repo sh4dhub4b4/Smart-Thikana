@@ -137,6 +137,17 @@ export default function Messages() {
     else { setAgreement(data as AgreementRow); toast.success("Agreement proposed"); }
   };
 
+  /** Landlord-only: accept or reject the pending agreement in this conversation. */
+  const respondToAgreement = async (newStatus: "accepted" | "rejected") => {
+    if (!agreement || role !== "landlord") return;
+    const { data, error } = await supabase.from("agreements")
+      .update({ status: newStatus }).eq("id", agreement.id)
+      .select("id, status, agreed_price").single();
+    if (error) { toast.error(error.message); return; }
+    setAgreement(data as AgreementRow);
+    toast.success(newStatus === "accepted" ? "Deal accepted — tenant can now pay" : "Deal rejected");
+  };
+
   // Click "call" → open native dialer if we know the peer's phone.
   const callPeer = () => {
     const phone = role === "tenant" ? active?.landlord?.phone : active?.tenant?.phone;
@@ -215,21 +226,31 @@ export default function Messages() {
                 </div>
               </div>
 
-              {/* Agreement strip (tenant only) */}
-              {role === "tenant" && active.listing && (
+              {/* Agreement strip — visible to both sides, with role-specific actions:
+                    • Tenant proposes a deal & pays once accepted.
+                    • Landlord accepts or rejects a pending proposal inline. */}
+              {active.listing && (role === "tenant" || (role === "landlord" && agreement)) && (
                 <div className="px-3 py-2 border-b bg-muted/30 flex items-center justify-between gap-2 text-sm">
                   <span className="text-muted-foreground truncate">
                     Rent: <strong className="text-foreground">{fmtBDT(active.listing.price)}</strong>/month
+                    {agreement && <span className="ml-2">· proposed at <strong>{fmtBDT(Number(agreement.agreed_price))}</strong></span>}
                   </span>
-                  {!agreement ? (
+                  {role === "tenant" && !agreement && (
                     <Button size="sm" variant="outline" onClick={proposeAgreement}>
                       <Handshake className="h-3.5 w-3.5 mr-1" /> Propose deal
                     </Button>
-                  ) : agreement.status === "accepted" ? (
+                  )}
+                  {role === "tenant" && agreement?.status === "accepted" && (
                     <Button size="sm" onClick={() => navigate(`/payment/${agreement.id}`)}>
                       <CreditCard className="h-3.5 w-3.5 mr-1" /> Pay now
                     </Button>
-                  ) : null}
+                  )}
+                  {role === "landlord" && agreement?.status === "pending" && (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => respondToAgreement("rejected")}>Reject</Button>
+                      <Button size="sm" onClick={() => respondToAgreement("accepted")}>Accept</Button>
+                    </div>
+                  )}
                 </div>
               )}
 

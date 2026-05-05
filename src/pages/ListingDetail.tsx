@@ -59,9 +59,10 @@ export default function ListingDetail() {
     if (!user || !listing) return;
     if (role !== "tenant") { toast.error("Only tenants can message landlords"); return; }
     setStarting(true);
-    // Try find existing
+    // Try find existing — `.limit(1).maybeSingle()` defends against any rare
+    // duplicate-conversation edge cases without throwing.
     const { data: existing } = await supabase.from("conversations")
-      .select("id").eq("listing_id", listing.id).eq("tenant_id", user.id).maybeSingle();
+      .select("id").eq("listing_id", listing.id).eq("tenant_id", user.id).limit(1).maybeSingle();
     let convId = existing?.id;
     if (!convId) {
       const { data: created, error } = await supabase.from("conversations").insert({

@@ -72,13 +72,15 @@ export default function TenantHome() {
     if (fDivision && fDistrict) fetchThanas(fDivision, fDistrict).then(setThanas);
   }, [fDivision, fDistrict]);
 
-  // Try geolocation on mount (user can deny — that's fine, mode falls back).
+  // Try geolocation on mount. If the user denies, the timeout fires, or the
+  // browser doesn't support it → silently fall back to the "By location"
+  // tab so they always have a working way to filter.
   useEffect(() => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) { setMode("by_location"); return; }
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => { setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoLoading(false); },
-      () => setGeoLoading(false),
+      () => { setGeoLoading(false); setMode("by_location"); },
       { timeout: 8000 }
     );
   }, []);
@@ -88,7 +90,7 @@ export default function TenantHome() {
     if (!navigator.geolocation) { toast.error("Geolocation not supported"); return; }
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => { setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoLoading(false); toast.success("Using your current location"); },
+      (pos) => { setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoLoading(false); setMode("near"); toast.success("Using your current location"); },
       () => { setGeoLoading(false); toast.error("Could not access your location"); }
     );
   };
@@ -100,7 +102,7 @@ export default function TenantHome() {
       if (l.price > maxPrice) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
-        const hay = `${l.title} ${l.location} ${l.area_moholla ?? ""} ${l.thana ?? ""} ${l.district ?? ""}`.toLowerCase();
+        const hay = `${l.title} ${l.location} ${l.area_moholla ?? ""} ${l.thana ?? ""} ${l.district ?? ""} ${l.division ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       if (mode === "by_location") {

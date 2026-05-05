@@ -1,5 +1,12 @@
 /**
- * Onboarding — runs after Google sign-in if the user doesn't yet have a role.
+ * Onboarding — runs after sign-in if the user doesn't yet have a row in
+ * `user_roles` (typical for fresh Google sign-ins, since email signup
+ * already records the chosen role).
+ *
+ * The intended role can be pre-selected via sessionStorage (set by the
+ * Auth screen before the OAuth redirect) — otherwise we default to tenant.
+ * `ProtectedRoute` redirects role-less users here, so this page is the
+ * single funnel for choosing tenant vs landlord.
  */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -25,8 +32,12 @@ export default function Onboarding() {
   const choose = async () => {
     if (!user) return;
     setSaving(true);
+    // Idempotent — if a row already exists for this user (e.g. they reopened
+    // onboarding) we silently ignore the duplicate-key error.
     const { error } = await supabase.from("user_roles").insert({ user_id: user.id, role: picked });
-    if (error) { toast.error(error.message); setSaving(false); return; }
+    if (error && !error.message.toLowerCase().includes("duplicate")) {
+      toast.error(error.message); setSaving(false); return;
+    }
     sessionStorage.removeItem("bashabari:intendedRole");
     await refreshProfile();
     navigate(picked === "landlord" ? "/landlord" : "/tenant", { replace: true });

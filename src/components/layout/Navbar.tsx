@@ -2,22 +2,30 @@
  * Navbar — top navigation with Bashabari branding and the
  * mygov.bd-style green/red accent stripe.
  */
+import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Building2, LogOut, MessageSquare, Heart, LayoutDashboard, User, ShieldCheck, Star, History, Search } from "lucide-react";
+import { Building2, LogOut, MessageSquare, Heart, LayoutDashboard, User, ShieldCheck, Star, History, Search, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMessageNotifications } from "@/hooks/useMessageNotifications";
+import {
+  useMessageNotifications,
+  useMessageNotificationsRoot,
+} from "@/hooks/useMessageNotifications";
 
 export default function Navbar() {
   const { user, profile, role, signOut } = useAuth();
   const navigate = useNavigate();
-  // Realtime unread message counter (and toast/browser-notification side-effects).
+  const [mobileOpen, setMobileOpen] = useState(false);
+  // Owns the realtime subscription for the entire app (mounted exactly once
+  // here in the Navbar). All other components only READ via useMessageNotifications().
+  useMessageNotificationsRoot();
   const { unread } = useMessageNotifications();
 
   const initials = (profile?.full_name || user?.email || "U")
@@ -69,6 +77,33 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {/* Mobile hamburger — exposes the same nav links inside a sheet
+              because the desktop <nav> is hidden below md. */}
+          {user && links.length > 0 && (
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72">
+                <nav className="mt-8 flex flex-col gap-1">
+                  {links.map((l) => (
+                    <NavLink key={l.to} to={l.to} onClick={() => setMobileOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium
+                        ${isActive ? "bg-primary-soft text-primary" : "hover:bg-muted"}`
+                      }>
+                      <l.icon className="h-4 w-4" /> {l.label}
+                      {"badge" in l && l.badge ? (
+                        <Badge variant="destructive" className="ml-auto h-4 min-w-4 px-1 text-[10px]">{l.badge}</Badge>
+                      ) : null}
+                    </NavLink>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
+          )}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -1,5 +1,13 @@
 /**
- * MyListings — landlord's full list with edit/delete/toggle-visibility.
+ * MyListings — landlord-only management page for their property listings.
+ *
+ * Per row the landlord can:
+ *   • Edit (→ /landlord/listings/:id/edit)
+ *   • Toggle visibility (`is_active` flag — hides from tenant browse without deleting)
+ *   • Delete (with AlertDialog confirmation)
+ *
+ * Hidden listings still appear here (RLS allows `landlord_id = auth.uid()`
+ * to bypass the `is_active` filter) so the landlord can re-publish them.
  */
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";

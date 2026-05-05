@@ -46,8 +46,15 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  // ── Authenticated but no role yet (typical for fresh Google sign-ins) ──
+  // Send to onboarding so they pick tenant vs landlord. Never bounce them
+  // to a `requireRole`-protected page they can't access.
+  if (!role && location.pathname !== "/onboarding") {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   // ── Wrong role → bounce to the correct dashboard for their role ─────────
-  if (requireRole && role !== requireRole) {
+  if (requireRole && role && role !== requireRole) {
     return <Navigate to={role === "landlord" ? "/landlord" : "/tenant"} replace />;
   }
 

@@ -1,5 +1,9 @@
 /**
- * Receipt — branded digital receipt, printable.
+ * Receipt — branded, printable digital receipt for a completed payment.
+ *
+ * Loads the payment row + linked listing/profiles and renders them in a
+ * print-friendly layout. The browser's native print dialog is used for
+ * download/save-as-PDF.
  */
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
