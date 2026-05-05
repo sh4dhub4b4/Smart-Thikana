@@ -1,5 +1,12 @@
 /**
- * Onboarding — runs after Google sign-in if the user doesn't yet have a role.
+ * Onboarding — runs after sign-in if the user doesn't yet have a row in
+ * `user_roles` (typical for fresh Google sign-ins, since email signup
+ * already records the chosen role).
+ *
+ * The intended role can be pre-selected via sessionStorage (set by the
+ * Auth screen before the OAuth redirect) — otherwise we default to tenant.
+ * `ProtectedRoute` redirects role-less users here, so this page is the
+ * single funnel for choosing tenant vs landlord.
  */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";

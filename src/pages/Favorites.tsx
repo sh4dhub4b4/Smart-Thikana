@@ -1,5 +1,9 @@
 /**
- * Favorites — listings the tenant has saved.
+ * Favorites — tenant's saved listings.
+ *
+ * The list of favorite IDs comes from `useFavorites` (cached in React state
+ * + persisted to the `favorites` table). We then fetch the corresponding
+ * listing rows and render them with the standard <ListingCard> grid.
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";

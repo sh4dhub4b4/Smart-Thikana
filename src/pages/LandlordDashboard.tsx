@@ -1,5 +1,10 @@
 /**
- * LandlordDashboard — earnings, recent listings, agreements awaiting action.
+ * LandlordDashboard — landing page for landlord users.
+ *
+ * Aggregates four headline numbers (total / active listings, lifetime
+ * earnings, pending agreements) plus the most recent listings and any
+ * agreements awaiting Accept/Reject. Accept/Reject is also available
+ * inline in the chat, but mirrored here for convenience.
  */
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
