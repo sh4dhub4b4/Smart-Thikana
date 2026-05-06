@@ -33,16 +33,16 @@ import { toast } from "sonner";
 // Validation schema — only the truly mandatory fields are required at the
 // schema level. Optional fields are coerced to null on save.
 const schema = z.object({
-  title:    z.string().trim().min(3, "Title too short").max(120),
-  price:    z.number().positive("Price must be > 0").max(10_000_000),
+  title: z.string().trim().min(3, "Title too short").max(120),
+  price: z.number().positive("Price must be > 0").max(10_000_000),
   bedrooms: z.number().int().min(0).max(20),
-  bathrooms:z.number().int().min(0).max(20),
-  area_sqft:z.number().int().min(0).max(100000).nullable(),
+  bathrooms: z.number().int().min(0).max(20),
+  area_sqft: z.number().int().min(0).max(100000).nullable(),
   // BD address mandatories
   division: z.string().min(1, "Division is required"),
   district: z.string().min(1, "District is required"),
-  thana:    z.string().min(1, "Thana is required"),
-  area_moholla:   z.string().trim().min(2, "Area / Moholla is required"),
+  thana: z.string().min(1, "Thana is required"),
+  area_moholla: z.string().trim().min(2, "Area / Moholla is required"),
   holding_number: z.string().trim().min(1, "Holding number is required"),
 });
 
@@ -60,7 +60,8 @@ export default function ListingForm() {
   const [bedrooms, setBedrooms] = useState(1);
   const [bathrooms, setBathrooms] = useState(1);
   const [area, setArea] = useState<number | "">("");
-  const [imagesText, setImagesText] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [active, setActive] = useState(true);
 
   // ── Section 1: Administrative ─────────────────────────────────────────────
@@ -118,7 +119,7 @@ export default function ListingForm() {
       setTitle(data.title); setDescription(data.description ?? "");
       setPrice(Number(data.price)); setPropertyType(data.property_type);
       setBedrooms(data.bedrooms); setBathrooms(data.bathrooms);
-      setArea(data.area_sqft ?? ""); setImagesText((data.images ?? []).join("\n"));
+      setArea(data.area_sqft ?? ""); setImages(data.images ?? []);
       setActive(data.is_active);
       setDivision(data.division ?? ""); setDistrict(data.district ?? "");
       setCityCorp((data.city_corporation as CityCorp) ?? "none");
@@ -148,6 +149,43 @@ export default function ListingForm() {
     );
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!user || !file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Max file size is 5 MB");
+      return;
+    }
+
+    setUploadingImage(true);
+    const ext = file.name.split(".").pop() || "jpg";
+    // Store in a folder named after the user ID to match the RLS policy
+    const path = `${user.id}/${Date.now()}.${ext}`;
+
+    const { error } = await supabase.storage.from("listing-images").upload(path, file);
+
+    if (error) {
+      toast.error(error.message);
+      setUploadingImage(false);
+      return;
+    }
+
+    // Get the public URL to save in the database
+    const { data: { publicUrl } } = supabase.storage.from("listing-images").getPublicUrl(path);
+
+    // Append to state (limit to 10 images)
+    setImages(prev => [...prev, publicUrl].slice(0, 10));
+    setUploadingImage(false);
+    toast.success("Image uploaded");
+
+    // Reset the input so the user can upload another file
+    e.target.value = '';
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    setImages(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -158,7 +196,7 @@ export default function ListingForm() {
     });
     if (!parsed.success) { toast.error(parsed.error.errors[0].message); return; }
 
-    const images = imagesText.split(/\n+/).map(s => s.trim()).filter(Boolean).slice(0, 10);
+    // We no longer need to parse text, we can use the `images` state directly!
     // The legacy `location` column is kept in sync as a human-readable summary.
     const locationSummary = [areaMoholla, thana, district].filter(Boolean).join(", ");
 
@@ -167,7 +205,7 @@ export default function ListingForm() {
       title: parsed.data.title, description, price: parsed.data.price,
       bedrooms: parsed.data.bedrooms, bathrooms: parsed.data.bathrooms,
       area_sqft: parsed.data.area_sqft, property_type: propertyType,
-      images, is_active: active, landlord_id: user.id,
+      images: images, is_active: active, landlord_id: user.id,
       location: locationSummary,
       // Administrative
       division, district, city_corporation: cityCorp, thana,
@@ -239,9 +277,35 @@ export default function ListingForm() {
             <Textarea rows={4} value={description} onChange={e => setDescription(e.target.value)}
               placeholder="Describe amenities, neighborhood, rules..." />
           </div>
-          <div><Label>Image URLs (one per line, up to 10)</Label>
-            <Textarea rows={3} value={imagesText} onChange={e => setImagesText(e.target.value)}
-              placeholder="https://images.unsplash.com/...&#10;https://..." />
+          <div>
+            <Label>Property Images </Label>
+            <div className="mt-1 flex items-center gap-2">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={uploadingImage || images.length >= 10}
+              />
+              {uploadingImage && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+            </div>
+
+            {/* Image Preview Grid */}
+            {images.length > 0 && (
+              <div className="grid grid-cols-5 gap-2 mt-3">
+                {images.map((url, i) => (
+                  <div key={i} className="relative group aspect-square rounded-md overflow-hidden border">
+                    <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </Card>
 
