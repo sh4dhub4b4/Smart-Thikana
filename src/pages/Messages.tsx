@@ -30,7 +30,10 @@ interface ConvRow {
   landlord: PeerInfo | null;
 }
 interface MsgRow { id: string; conversation_id: string; sender_id: string; content: string; created_at: string }
-interface AgreementRow { id: string; status: "pending" | "accepted" | "rejected"; agreed_price: number }
+interface AgreementRow {
+  id: string; status: "pending" | "accepted" | "rejected"; agreed_price: number;
+  payments?: { id: string }[];
+}
 
 export default function Messages() {
   const { user, role } = useAuth();
@@ -83,7 +86,7 @@ export default function Messages() {
       setConversations(rows.map(r => ({
         ...r,
         listing: listingMap.get(r.listing_id) ?? null,
-        tenant:  profileMap.get(r.tenant_id) ?? null,
+        tenant: profileMap.get(r.tenant_id) ?? null,
         landlord: profileMap.get(r.landlord_id) ?? null,
       })));
       setLoadingConvs(false);
@@ -96,7 +99,7 @@ export default function Messages() {
     (async () => {
       const [{ data: msgs }, { data: ag }] = await Promise.all([
         supabase.from("messages").select("*").eq("conversation_id", activeId).order("created_at"),
-        supabase.from("agreements").select("id, status, agreed_price").eq("conversation_id", activeId).maybeSingle(),
+        supabase.from("agreements").select("id, status, agreed_price, payments(id)").eq("conversation_id", activeId).maybeSingle(),
       ]);
       setMessages((msgs as MsgRow[]) ?? []);
       setAgreement((ag as AgreementRow) ?? null);
@@ -134,7 +137,10 @@ export default function Messages() {
       agreed_price: active.listing.price,
     }).select("id, status, agreed_price").single();
     if (error) toast.error(error.message);
-    else { setAgreement(data as AgreementRow); toast.success("Agreement proposed"); }
+    else {
+      console.log(`data = ${data}`)
+      setAgreement(data as AgreementRow); toast.success("Agreement proposed");
+    }
   };
 
   /** Landlord-only: accept or reject the pending agreement in this conversation. */
@@ -240,7 +246,7 @@ export default function Messages() {
                       <Handshake className="h-3.5 w-3.5 mr-1" /> Propose deal
                     </Button>
                   )}
-                  {role === "tenant" && agreement?.status === "accepted" && (
+                  {role === "tenant" && agreement?.status === "accepted" && (!agreement.payments || agreement.payments.length === 0) && (
                     <Button size="sm" onClick={() => navigate(`/payment/${agreement.id}`)}>
                       <CreditCard className="h-3.5 w-3.5 mr-1" /> Pay now
                     </Button>

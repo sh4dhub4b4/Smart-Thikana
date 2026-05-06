@@ -20,10 +20,35 @@ export default function Receipt() {
   useEffect(() => {
     (async () => {
       if (!id) return;
-      const { data: p } = await supabase.from("payments")
-        .select("*, listings(title, location), tenant:profiles!payments_tenant_id_fkey(full_name), landlord:profiles!payments_landlord_id_fkey(full_name, business_name)")
-        .eq("id", id).maybeSingle();
-      setData(p);
+
+      // STEP 1: Fetch the payment and the listing data first
+      const { data: paymentData } = await supabase
+        .from("payments")
+        .select("*, listings(title, location)")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!paymentData) {
+        setData(null);
+        return;
+      }
+
+      // STEP 2: Fetch the profiles for the tenant and landlord explicitly
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, business_name")
+        .in("id", [paymentData.tenant_id, paymentData.landlord_id]);
+
+      // STEP 3: Stitch the profiles into the data object expected by the UI
+      const tenantProfile = profiles?.find(p => p.id === paymentData.tenant_id);
+      const landlordProfile = profiles?.find(p => p.id === paymentData.landlord_id);
+
+      setData({
+        ...paymentData,
+        tenant: tenantProfile,
+        landlord: landlordProfile,
+      });
+
     })();
   }, [id]);
 
@@ -45,7 +70,7 @@ export default function Receipt() {
                 <Building2 className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <p className="font-display font-bold text-primary">Bashabari</p>
+                <p className="font-display font-bold text-primary">Smart Thikana</p>
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Official Receipt</p>
               </div>
             </div>
@@ -69,7 +94,7 @@ export default function Receipt() {
           </dl>
 
           <div className="mt-8 pt-6 border-t text-center text-xs text-muted-foreground">
-            <p>Thank you for using Bashabari.</p>
+            <p>Thank you for using Smart Thikana.</p>
             <p>This is a digital receipt; both parties have a copy in their dashboard.</p>
           </div>
         </div>

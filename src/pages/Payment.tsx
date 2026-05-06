@@ -33,6 +33,7 @@ export default function Payment() {
     (async () => {
       if (!agreementId) return;
       const { data } = await supabase.from("agreements").select("*, listings(title, location)").eq("id", agreementId).maybeSingle();
+      console.log(`agreement data = ${data}`)
       setAgreement(data);
     })();
   }, [agreementId]);
@@ -42,15 +43,27 @@ export default function Payment() {
     if (!user || !agreement) return;
     if (agreement.status !== "accepted") { toast.error("Agreement not accepted yet"); return; }
     if (card.replace(/\s/g, "").length < 12) { toast.error("Enter a valid card number"); return; }
+
     setPaying(true);
     await new Promise(r => setTimeout(r, 1200)); // simulate processing
+
+    // STEP 1: Select both 'id' and 'receipt_number'
     const { data, error } = await supabase.from("payments").insert({
       agreement_id: agreement.id, listing_id: agreement.listing_id,
       tenant_id: agreement.tenant_id, landlord_id: agreement.landlord_id,
       amount: agreement.agreed_price, status: "completed",
-    }).select("id").single();
+    }).select("id, receipt_number").single();
+
     setPaying(false);
     if (error) { toast.error(error.message); return; }
+
+    // STEP 2: Send the automated system message to trigger the notification
+    await supabase.from("messages").insert({
+      conversation_id: agreement.conversation_id,
+      sender_id: user.id,
+      content: `✅ I have completed the rent payment of ${fmtBDT(Number(agreement.agreed_price))}. Receipt Number: ${data.receipt_number}`
+    });
+
     navigate(`/receipt/${data.id}`);
   };
 

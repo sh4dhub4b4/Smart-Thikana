@@ -77,7 +77,10 @@ export default function RentalHistory() {
                   {[r.area_moholla, r.thana, r.district, r.division].filter(Boolean).join(", ") || r.listing_location}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                  <Receipt className="h-3 w-3" /> {r.receipt_number}
+                  <Receipt className="h-3 w-3" /> 
+                  <Link to={`/receipt/${r.payment_id}`} className="hover:text-primary hover:underline">
+                    {r.receipt_number}
+                  </Link>
                 </div>
               </div>
               <div className="text-right shrink-0">
