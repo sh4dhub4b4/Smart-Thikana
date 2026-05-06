@@ -171,10 +171,14 @@ export default function ListingForm() {
     }
 
     // Get the public URL to save in the database
-    const { data: { publicUrl } } = supabase.storage.from("listing-images").getPublicUrl(path);
-
+    const { data } = supabase.storage.from("listing-images").getPublicUrl(path);
+    if (!data?.publicUrl) {
+      toast.error("Failed to generate image URL");
+      setUploadingImage(false);
+      return;
+    }
     // Append to state (limit to 10 images)
-    setImages(prev => [...prev, publicUrl].slice(0, 10));
+    setImages(prev => [...prev, data.publicUrl].slice(0, 10));
     setUploadingImage(false);
     toast.success("Image uploaded");
 
@@ -194,7 +198,11 @@ export default function ListingForm() {
       area_sqft: area === "" ? null : Number(area),
       division, district, thana, area_moholla: areaMoholla, holding_number: holdingNumber,
     });
-    if (!parsed.success) { toast.error(parsed.error.errors[0].message); return; }
+    if (!parsed.success) {
+      const errorMsg = parsed.error.errors?.[0]?.message ?? "Validation failed";
+      toast.error(errorMsg);
+      return;
+    }
 
     // We no longer need to parse text, we can use the `images` state directly!
     // The legacy `location` column is kept in sync as a human-readable summary.
