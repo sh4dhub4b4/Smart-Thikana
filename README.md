@@ -1,4 +1,4 @@
-# Bashabari — Bangladesh House Rental Platform
+# Smart Thikana — Bangladesh House Rental Platform
 
 A trust-first house-rental web app tailored for Bangladesh. Tenants discover
 verified properties using the official **Division → District → Thana** address

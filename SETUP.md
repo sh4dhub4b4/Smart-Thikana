@@ -1,6 +1,6 @@
-# Bashabari — Setup & Deployment Guide
+# Smart Thikana — Setup & Deployment Guide
 
-A complete guide to running the Bashabari house-rental platform locally and deploying it to production. This project uses **Lovable Cloud** (a managed Postgres + Auth + Realtime + Storage backend) so there is **no Docker required**.
+A complete guide to running the Smart Thikana house-rental platform locally and deploying it to production. This project uses **Lovable Cloud** (a managed Postgres + Auth + Realtime + Storage backend) so there is **no Docker required**.
 
 ---
 
@@ -19,8 +19,8 @@ A complete guide to running the Bashabari house-rental platform locally and depl
 ## 2. Clone & install
 
 ```bash
-git clone <your-fork-url> bashabari
-cd bashabari
+git clone <your-fork-url> Smart Thikana
+cd Smart Thikana
 bun install        # or: npm install
 ```
 
