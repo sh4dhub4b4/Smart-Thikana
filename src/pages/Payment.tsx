@@ -11,7 +11,7 @@
  */
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CreditCard, Lock, Loader2, ArrowLeft } from "lucide-react";
+import { CreditCard, Lock, Loader2, ArrowLeft, ShieldCheck, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,15 +25,27 @@ export default function Payment() {
   const { agreementId } = useParams<{ agreementId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  
   const [agreement, setAgreement] = useState<any>(null);
-  const [card, setCard] = useState(""); const [name, setName] = useState(""); const [exp, setExp] = useState(""); const [cvv, setCvv] = useState("");
+  const [card, setCard] = useState("");
+  const [name, setName] = useState("");
+  const [exp, setExp] = useState("");
+  const [cvv, setCvv] = useState("");
   const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     (async () => {
       if (!agreementId) return;
-      const { data } = await supabase.from("agreements").select("*, listings(title, location)").eq("id", agreementId).maybeSingle();
-      console.log(`agreement data = ${data}`)
+      const { data, error } = await supabase
+        .from("agreements")
+        .select("*, listings(title, location)")
+        .eq("id", agreementId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching agreement:", error);
+        return;
+      }
       setAgreement(data);
     })();
   }, [agreementId]);
@@ -41,70 +53,211 @@ export default function Payment() {
   const pay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !agreement) return;
-    if (agreement.status !== "accepted") { toast.error("Agreement not accepted yet"); return; }
-    if (card.replace(/\s/g, "").length < 12) { toast.error("Enter a valid card number"); return; }
+
+    // Guard: Ensure the landlord has already accepted the proposal
+    if (agreement.status !== "accepted") {
+      toast.error("Agreement not accepted yet");
+      return;
+    }
+
+    // Validation: Check for basic form completion
+    if (!name || card.length < 16 || !exp || !cvv) {
+      toast.error("Please fill in all payment details correctly");
+      return;
+    }
 
     setPaying(true);
-    await new Promise(r => setTimeout(r, 1200)); // simulate processing
+    // Simulate payment gateway latency
+    await new Promise((r) => setTimeout(r, 1500));
 
-    // STEP 1: Select both 'id' and 'receipt_number'
-    const { data, error } = await supabase.from("payments").insert({
-      agreement_id: agreement.id, listing_id: agreement.listing_id,
-      tenant_id: agreement.tenant_id, landlord_id: agreement.landlord_id,
-      amount: agreement.agreed_price, status: "completed",
-    }).select("id, receipt_number").single();
+    try {
+      // 1. Create the payment record in the database
+      const { data: payData, error: payError } = await supabase
+        .from("payments")
+        .insert({
+          agreement_id: agreement.id,
+          listing_id: agreement.listing_id,
+          tenant_id: agreement.tenant_id,
+          landlord_id: agreement.landlord_id,
+          amount: agreement.agreed_price,
+          status: "completed",
+        })
+        .select("id, receipt_number")
+        .single();
 
-    setPaying(false);
-    if (error) { toast.error(error.message); return; }
+      if (payError) throw payError;
 
-    // STEP 2: Send the automated system message to trigger the notification
-    await supabase.from("messages").insert({
-      conversation_id: agreement.conversation_id,
-      sender_id: user.id,
-      content: `✅ I have completed the rent payment of ${fmtBDT(Number(agreement.agreed_price))}. Receipt Number: ${data.receipt_number}`
-    });
+      // 2. ACTIVATE LEASE: Switch agreement status to 'active' 
+      // This enables the automated monthly billing engine
+      const { error: activateError } = await supabase
+        .from("agreements")
+        .update({ 
+          status: "active",
+          updated_at: new Date().toISOString() 
+        })
+        .eq("id", agreement.id);
 
-    navigate(`/receipt/${data.id}`);
+      if (activateError) throw activateError;
+
+      // 3. Automated Notification: Send confirmation to the chat thread
+      await supabase.from("messages").insert({
+        conversation_id: agreement.conversation_id,
+        sender_id: user.id,
+        content: `✅ Payment of ${fmtBDT(Number(agreement.agreed_price))} confirmed. The lease for ${agreement.listings?.title} is now ACTIVE. Receipt: ${payData.receipt_number}`,
+      });
+
+      toast.success("Payment Successful!");
+      navigate(`/receipt/${payData.id}`);
+    } catch (error: any) {
+      toast.error(error.message || "Payment failed. Please try again.");
+    } finally {
+      setPaying(false);
+    }
   };
 
-  if (!agreement) return <div className="container py-20 grid place-items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (!agreement) {
+    return (
+      <div className="container py-20 grid place-items-center">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground animate-pulse">Loading secure checkout...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container max-w-2xl py-8">
-      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4"><ArrowLeft className="h-4 w-4 mr-2" /> Back</Button>
-      <div className="grid md:grid-cols-[1fr_240px] gap-4">
-        <Card className="p-6">
-          <h1 className="font-display text-2xl font-bold mb-1">Secure Payment</h1>
-          <p className="text-sm text-muted-foreground mb-6 flex items-center gap-1"><Lock className="h-3.5 w-3.5" /> Encrypted simulation — no real money.</p>
-          <form onSubmit={pay} className="space-y-4">
-            <div><Label>Cardholder name</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Full name on card" /></div>
+    <div className="container max-w-4xl py-12">
+      <Button 
+        variant="ghost" 
+        onClick={() => navigate(-1)} 
+        className="mb-6 hover:bg-slate-100"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Messages
+      </Button>
+
+      <div className="grid md:grid-cols-[1fr_320px] gap-8">
+        <Card className="p-8 shadow-lg border-primary/5">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <Label>Card number</Label>
+              <h1 className="font-display text-2xl font-bold mb-1">Secure Payment</h1>
+              <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5 text-green-600" /> 
+                Encrypted simulation for Smart Thikana — no real money moves.
+              </p>
+            </div>
+            <ShieldCheck className="h-12 w-12 text-primary/20" />
+          </div>
+
+          <form onSubmit={pay} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name">Cardholder Name</Label>
+              <Input 
+                id="name"
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+                placeholder="Full name on card" 
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="card">Card Number</Label>
               <div className="relative">
-                <Input value={card} maxLength={19}
-                  onChange={e => setCard(e.target.value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim())}
-                  placeholder="4242 4242 4242 4242" />
+                <Input 
+                  id="card"
+                  value={card} 
+                  maxLength={19}
+                  onChange={(e) => setCard(e.target.value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim())}
+                  placeholder="4242 4242 4242 4242" 
+                  required
+                />
                 <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Expiry</Label><Input value={exp} onChange={e => setExp(e.target.value)} placeholder="MM/YY" maxLength={5} /></div>
-              <div><Label>CVV</Label><Input type="password" value={cvv} onChange={e => setCvv(e.target.value)} placeholder="123" maxLength={4} /></div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="expiry">Expiry Date</Label>
+                <Input 
+                  id="expiry"
+                  value={exp} 
+                  onChange={(e) => setExp(e.target.value)} 
+                  placeholder="MM/YY" 
+                  maxLength={5} 
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cvv">CVV</Label>
+                <Input 
+                  id="cvv"
+                  type="password" 
+                  value={cvv} 
+                  onChange={(e) => setCvv(e.target.value)} 
+                  placeholder="123" 
+                  maxLength={4} 
+                  required
+                />
+              </div>
             </div>
+
+            <div className="bg-slate-50 p-4 rounded-lg flex gap-3 items-start">
+              <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-slate-600 leading-relaxed">
+                By clicking "Pay", you agree to the terms of the rental agreement. 
+                Your lease will be activated immediately and recorded in the Smart Thikana ledger.
+              </p>
+            </div>
+
             <Button type="submit" className="w-full" size="lg" disabled={paying}>
-              {paying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Pay {fmtBDT(Number(agreement.agreed_price))}
+              {paying ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  Confirm & Pay {fmtBDT(Number(agreement.agreed_price))}
+                </>
+              )}
             </Button>
           </form>
         </Card>
 
-        <Card className="p-5 h-fit">
-          <h3 className="font-display font-semibold mb-3">Order summary</h3>
-          <p className="text-sm font-medium">{agreement.listings?.title}</p>
-          <p className="text-xs text-muted-foreground mb-4">{agreement.listings?.location}</p>
-          <div className="border-t pt-3 flex justify-between text-sm"><span>First month rent</span><strong>{fmtBDT(Number(agreement.agreed_price))}</strong></div>
-          <div className="mt-1 flex justify-between text-base font-bold text-primary"><span>Total</span><span>{fmtBDT(Number(agreement.agreed_price))}</span></div>
-        </Card>
+        <div className="space-y-4">
+          <Card className="p-6 h-fit bg-slate-50/50 border-dashed">
+            <h3 className="font-display font-semibold mb-4 text-slate-800">Order Summary</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-bold text-slate-900">{agreement.listings?.title}</p>
+                <p className="text-xs text-muted-foreground leading-tight">{agreement.listings?.location}</p>
+              </div>
+              
+              <div className="border-t border-slate-200 pt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Initial Rent Payment</span>
+                  <span className="font-medium">{fmtBDT(Number(agreement.agreed_price))}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Platform Service Fee</span>
+                  <span className="text-green-600 font-medium italic">Free</span>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-300 pt-4 flex justify-between items-center">
+                <span className="text-base font-bold">Total Amount</span>
+                <span className="text-xl font-black text-primary">
+                  {fmtBDT(Number(agreement.agreed_price))}
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          <p className="text-[10px] text-center text-muted-foreground px-4">
+            Payments are processed through a simulated environment. Tax deductions (TDS) and platform fees are calculated on the landlord's receipt.
+          </p>
+        </div>
       </div>
     </div>
   );
