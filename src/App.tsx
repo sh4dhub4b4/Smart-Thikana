@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import ServicesDashboard from "./features/services/ServicesDashboard";
+
 
 // Ensure this matches the file name you created
 import TenantLifeCycle from "./pages/TenantLifeCycle";
@@ -50,6 +52,7 @@ const App = () => (
               <Route path="/landlord/listings/new" element={<ProtectedRoute requireRole="landlord"><ListingForm /></ProtectedRoute>} />
               <Route path="/landlord/listings/:id/edit" element={<ProtectedRoute requireRole="landlord"><ListingForm /></ProtectedRoute>} />
               <Route path="/listings/:id" element={<ListingDetail />} />
+              <Route path="/services" element={<ProtectedRoute><ServicesDashboard /></ProtectedRoute>} />
               <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
               <Route path="/payment/:agreementId" element={<ProtectedRoute requireRole="tenant"><Payment /></ProtectedRoute>} />
               <Route path="/receipt/:id" element={<ProtectedRoute><Receipt /></ProtectedRoute>} />

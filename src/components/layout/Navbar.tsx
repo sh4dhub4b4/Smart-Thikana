@@ -35,6 +35,7 @@ export default function Navbar() {
     { to: "/tenant", label: "Browse", icon: Building2 },
     { to: "/favorites", label: "Saved", icon: Heart },
     { to: "/messages", label: "Messages", icon: MessageSquare, badge: unread },
+    { to: "/services", label: "Services", icon: ShieldCheck },
     { to: "/history", label: "History", icon: History },
     { to: "/feedback", label: "Feedback", icon: Star },
   ];
@@ -42,6 +43,7 @@ export default function Navbar() {
     { to: "/landlord", label: "Dashboard", icon: LayoutDashboard },
     { to: "/landlord/listings", label: "My Listings", icon: Building2 },
     { to: "/messages", label: "Messages", icon: MessageSquare, badge: unread },
+    { to: "/services", label: "Services", icon: ShieldCheck },
     { to: "/tenant-lookup", label: "Tenant lookup", icon: Search },
     { to: "/feedback", label: "Feedback", icon: Star },
   ];

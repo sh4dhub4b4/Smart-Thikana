@@ -21,6 +21,10 @@ feedback and an automatically-generated rental history.
 - Realtime 1-to-1 chat between tenant and landlord per listing
 - Browser + in-app message notifications (single subscription, no duplicates)
 - Tenant ↔ Landlord peer feedback (peer-only visibility via RLS)
+- Printable receipts with structured BD address and Google Maps link
+- Tanant rental history visible to landlords for trust; landlord lookup by tenant User ID
+- Mobile hamburger nav + responsive layouts
+- 
 - Digital deal flow: propose → accept / reject → pay → branded receipt
 - Monthy billing cycle with auto-generated rental history (visible to landlords for trust)
 - Printable receipts with structured BD address and Google Maps link
