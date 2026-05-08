@@ -3,39 +3,35 @@ import { Loader2, MapPin, Star, Wrench, Zap, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useServiceCategories, useServiceProviders } from "./services-api.ts";
-// TODO: Ensure these match the hooks you created in Step 2 (services-api.ts)
+import { useServiceCategories, useServiceProviders } from "./services-api";
+import { ServiceBookingFlow } from "./ServiceBookingFlow";
 
 export default function ServicesDashboard() {
-    // Local state for category filtering. Null means "Show All".
+    // 1. Local state for category filtering. Null means "Show All".
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-    // Fetching data via the React Query hooks from Step 2
-    // const { data: categories, isLoading: loadingCategories } = useCategories();
-    // const { data: providers, isLoading: loadingProviders } = useProviders(selectedCategory);
+    // 2. State to handle the Single-File Booking Modal
+    const [selectedProvider, setSelectedProvider] = useState<any>(null);
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
-    // --- MOCK DATA FOR COMPILATION (Remove once hooks are plugged in) ---
-    const loadingCategories = false;
-    const loadingProviders = false;
-    const categories = [
-        { id: "1", name: "Plumber", icon: "wrench" },
-        { id: "2", name: "Electrician", icon: "zap" },
-        { id: "3", name: "Cleaner", icon: "sparkles" },
-    ];
-    const providers = [
-        { id: "1", company_name: "Dhaka Quick Fix", hourly_rate: 500, experience_years: 5, district: "Dhaka", thana: "Gulshan" },
-        { id: "2", company_name: "Pro Volt Services", hourly_rate: 600, experience_years: 8, district: "Dhaka", thana: "Banani" },
-    ];
-    // -------------------------------------------------------------------
+    // 3. Fetching REAL data via the React Query hooks from services-api.ts
+    const { data: categories, isLoading: loadingCategories } = useServiceCategories();
+    const { data: providers, isLoading: loadingProviders } = useServiceProviders(selectedCategory);
 
     // Helper to render lucide icons dynamically based on DB string
-    const renderIcon = (iconName?: string) => {
+    const renderIcon = (iconName?: string | null) => {
         switch (iconName?.toLowerCase()) {
             case 'wrench': return <Wrench className="w-5 h-5" />;
             case 'zap': return <Zap className="w-5 h-5" />;
             case 'sparkles': return <Sparkles className="w-5 h-5" />;
             default: return <Wrench className="w-5 h-5" />;
         }
+    };
+
+    // Handler to open the booking modal with the correct provider context
+    const handleRequestService = (provider: any) => {
+        setSelectedProvider(provider);
+        setIsBookingModalOpen(true);
     };
 
     return (
@@ -112,8 +108,11 @@ export default function ServicesDashboard() {
                                     </div>
                                 </CardContent>
                                 <CardFooter>
-                                    {/* Step 4 Integration Point: We will replace this with the Booking Dialog trigger */}
-                                    <Button className="w-full" variant="default">
+                                    <Button
+                                        className="w-full"
+                                        variant="default"
+                                        onClick={() => handleRequestService(provider)}
+                                    >
                                         Request Service
                                     </Button>
                                 </CardFooter>
@@ -123,27 +122,13 @@ export default function ServicesDashboard() {
                 )}
             </section>
 
+            {/* Single-File Booking Flow Integration */}
+            <ServiceBookingFlow
+                provider={selectedProvider}
+                isOpen={isBookingModalOpen}
+                onClose={() => setIsBookingModalOpen(false)}
+            />
+
         </div>
     );
 }
-
-/*
-usecase diagram
-actor "Logged-in User\n(Tenant / Landlord)" as User
-
-package "Services Marketplace (Step 3 & 4)" {
-  usecase "View Services Dashboard" as ViewDash
-  usecase "Filter by Category\n(Plumber, Electrician, etc.)" as FilterCat
-  usecase "View Provider Cards" as ViewCards
-  
-  usecase "Open Booking Modal\n(Step 4 Target)" as OpenModal
-  usecase "Submit Request to\nservice_bookings table" as SubmitReq
-}
-
-User --> ViewDash : Navigates to /services
-ViewDash --> FilterCat : Clicks UI Buttons
-ViewDash --> ViewCards : Sees available vendors
-
-ViewCards --> OpenModal : Clicks "Request Service"
-OpenModal --> SubmitReq : Fills minimal details\n& Clicks "Confirm"
-*/
