@@ -1,15 +1,10 @@
 /**
  * Messages — realtime chat between tenant and landlord per conversation.
- *
- * Why we DON'T use embedded selects (e.g. `profiles!conversations_tenant_id_fkey(...)`):
- *   PostgREST's implicit-relationship resolution was returning empty results
- *   for some users, which made conversations look invisible after a tenant
- *   started one. We now fetch conversations and the related listing/profiles
- *   in two separate, predictable queries — slightly more code, zero magic.
+ * Now includes full tenant profile access for landlords.
  */
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { Send, Phone, Loader2, MessageSquare, Handshake, CreditCard } from "lucide-react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { Send, Phone, Loader2, MessageSquare, Handshake, CreditCard, User, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +16,7 @@ import { useMessageNotifications } from "@/hooks/useMessageNotifications";
 import { fmtBDT } from "@/lib/listings";
 import { toast } from "sonner";
 
+// --- REQUIRED INTERFACES (Fixes errors 2304) ---
 interface PeerInfo { id: string; full_name: string; avatar_url: string | null; phone: string | null }
 interface ListingInfo { id: string; title: string; price: number; images: string[] }
 interface ConvRow {
@@ -42,9 +38,6 @@ export default function Messages() {
   const navigate = useNavigate();
   const activeId = params.get("c");
 
-  // Clear the unread badge as soon as the user opens this page.
-  useEffect(() => { clearUnread(); }, [clearUnread, activeId]);
-
   const [conversations, setConversations] = useState<ConvRow[]>([]);
   const [messages, setMessages] = useState<MsgRow[]>([]);
   const [agreement, setAgreement] = useState<AgreementRow | null>(null);
@@ -56,21 +49,22 @@ export default function Messages() {
   const active = conversations.find(c => c.id === activeId) || null;
   const other = active ? (role === "tenant" ? active.landlord : active.tenant) : null;
 
-  // ── Load conversations + their related listing/profiles in 3 simple steps ──
+  useEffect(() => { clearUnread(); }, [clearUnread, activeId]);
+
+  // Load Conversations
   useEffect(() => {
     if (!user) return;
     setLoadingConvs(true);
     (async () => {
-      // 1. All conversations the current user participates in (RLS filters automatically).
       const { data: convs, error } = await supabase
         .from("conversations")
         .select("id, listing_id, tenant_id, landlord_id, created_at")
         .order("created_at", { ascending: false });
+      
       if (error) { toast.error(error.message); setLoadingConvs(false); return; }
-      const rows = (convs ?? []) as Pick<ConvRow, "id" | "listing_id" | "tenant_id" | "landlord_id" | "created_at">[];
+      const rows = (convs ?? []) as any[];
       if (rows.length === 0) { setConversations([]); setLoadingConvs(false); return; }
 
-      // 2. Fetch all referenced listings + profiles in two batches.
       const listingIds = [...new Set(rows.map(r => r.listing_id))];
       const profileIds = [...new Set(rows.flatMap(r => [r.tenant_id, r.landlord_id]))];
 
@@ -79,7 +73,6 @@ export default function Messages() {
         supabase.from("profiles").select("id, full_name, avatar_url, phone").in("id", profileIds),
       ]);
 
-      // 3. Stitch them together client-side.
       const listingMap = new Map((listings ?? []).map((l: any) => [l.id, l as ListingInfo]));
       const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p as PeerInfo]));
 
@@ -93,7 +86,7 @@ export default function Messages() {
     })();
   }, [user]);
 
-  // ── Load messages + agreement for active conv, subscribe to realtime ──────
+  // Load Messages & Agreement
   useEffect(() => {
     if (!activeId) return;
     (async () => {
@@ -106,8 +99,7 @@ export default function Messages() {
     })();
 
     const channel = supabase.channel(`messages:${activeId}`)
-      .on("postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${activeId}` },
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${activeId}` },
         (payload) => setMessages(prev => [...prev, payload.new as MsgRow]))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -117,6 +109,7 @@ export default function Messages() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  // Actions
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.trim() || !activeId || !user) return;
@@ -124,9 +117,25 @@ export default function Messages() {
     const { error } = await supabase.from("messages").insert({
       conversation_id: activeId, sender_id: user.id, content: draft.trim().slice(0, 2000),
     });
-    if (error) toast.error(error.message);
-    else setDraft("");
+    if (error) toast.error(error.message); else setDraft("");
     setSending(false);
+  };
+
+  // Fixed callPeer function (Fixes error 2304)
+  const callPeer = () => {
+    const phone = role === "tenant" ? active?.landlord?.phone : active?.tenant?.phone;
+    if (!phone) { toast.info("Phone number not provided"); return; }
+    window.location.href = `tel:${phone}`;
+  };
+
+  const respondToAgreement = async (newStatus: "accepted" | "rejected") => {
+    if (!agreement || role !== "landlord") return;
+    const { data, error } = await supabase.from("agreements")
+      .update({ status: newStatus }).eq("id", agreement.id)
+      .select("id, status, agreed_price").single();
+    if (error) { toast.error(error.message); return; }
+    setAgreement(data as AgreementRow);
+    toast.success(newStatus === "accepted" ? "Deal accepted" : "Deal rejected");
   };
 
   const proposeAgreement = async () => {
@@ -137,28 +146,7 @@ export default function Messages() {
       agreed_price: active.listing.price,
     }).select("id, status, agreed_price").single();
     if (error) toast.error(error.message);
-    else {
-      console.log(`data = ${data}`)
-      setAgreement(data as AgreementRow); toast.success("Agreement proposed");
-    }
-  };
-
-  /** Landlord-only: accept or reject the pending agreement in this conversation. */
-  const respondToAgreement = async (newStatus: "accepted" | "rejected") => {
-    if (!agreement || role !== "landlord") return;
-    const { data, error } = await supabase.from("agreements")
-      .update({ status: newStatus }).eq("id", agreement.id)
-      .select("id, status, agreed_price").single();
-    if (error) { toast.error(error.message); return; }
-    setAgreement(data as AgreementRow);
-    toast.success(newStatus === "accepted" ? "Deal accepted — tenant can now pay" : "Deal rejected");
-  };
-
-  // Click "call" → open native dialer if we know the peer's phone.
-  const callPeer = () => {
-    const phone = role === "tenant" ? active?.landlord?.phone : active?.tenant?.phone;
-    if (!phone) { toast.info("Phone number not provided"); return; }
-    window.location.href = `tel:${phone}`;
+    else { setAgreement(data as AgreementRow); toast.success("Agreement proposed"); }
   };
 
   return (
@@ -166,14 +154,11 @@ export default function Messages() {
       <h1 className="font-display text-3xl font-bold mb-6">Messages</h1>
 
       <div className="grid lg:grid-cols-[320px_1fr] gap-4 h-[calc(100vh-12rem)]">
-        {/* ─── Conversation list ─────────────────────────────────────────── */}
         <Card className="overflow-hidden flex flex-col">
           <div className="p-3 border-b font-semibold text-sm">Conversations</div>
           <div className="overflow-y-auto flex-1">
             {loadingConvs ? (
               <div className="p-6 text-center"><Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" /></div>
-            ) : conversations.length === 0 ? (
-              <p className="p-6 text-sm text-muted-foreground text-center">No conversations yet.</p>
             ) : conversations.map(c => {
               const peer = role === "tenant" ? c.landlord : c.tenant;
               return (
@@ -193,7 +178,6 @@ export default function Messages() {
           </div>
         </Card>
 
-        {/* ─── Chat panel ────────────────────────────────────────────────── */}
         <Card className="flex flex-col overflow-hidden">
           {!active ? (
             <div className="flex-1 grid place-items-center text-muted-foreground">
@@ -204,20 +188,32 @@ export default function Messages() {
             </div>
           ) : (
             <>
-              <div className="p-3 border-b flex items-center justify-between gap-3">
+              <div className="p-3 border-b flex items-center justify-between gap-3 bg-muted/10">
                 <div className="flex items-center gap-3 min-w-0">
-                  <Avatar className="h-9 w-9">
+                  <Avatar className="h-10 w-10 border shadow-sm">
                     <AvatarImage src={other?.avatar_url ?? undefined} />
                     <AvatarFallback>{other?.full_name?.[0] ?? "?"}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate">
-                      {other?.full_name || "Unknown user"}
-                      <span className="ml-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      {/* FULL PROFILE ACCESS FOR LANDLORDS */}
+                      {role === "landlord" && other ? (
+                        <Link 
+                          to={`/history/${other.id}`} 
+                          className="font-bold text-sm truncate hover:text-primary hover:underline flex items-center gap-1 group"
+                        >
+                          {other.full_name || "Unknown user"}
+                          <User className="h-3.5 w-3.5 opacity-40 group-hover:opacity-100" />
+                          <ShieldCheck className="h-3.5 w-3.5 text-primary opacity-60" />
+                        </Link>
+                      ) : (
+                        <p className="font-bold text-sm truncate">{other?.full_name || "Unknown user"}</p>
+                      )}
+                      <Badge variant="outline" className="text-[9px] uppercase h-5">
                         {role === "tenant" ? "Landlord" : "Tenant"}
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">{active.listing?.title}</p>
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate font-medium">{active.listing?.title}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -226,15 +222,13 @@ export default function Messages() {
                       {agreement.status}
                     </Badge>
                   )}
-                  <Button size="sm" variant="outline" onClick={callPeer}>
+                  <Button size="sm" variant="outline" onClick={callPeer} className="h-9 w-9 p-0">
                     <Phone className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
-              {/* Agreement strip — visible to both sides, with role-specific actions:
-                    • Tenant proposes a deal & pays once accepted.
-                    • Landlord accepts or rejects a pending proposal inline. */}
+              {/* Agreement logic section */}
               {active.listing && (role === "tenant" || (role === "landlord" && agreement)) && (
                 <div className="px-3 py-2 border-b bg-muted/30 flex items-center justify-between gap-2 text-sm">
                   <span className="text-muted-foreground truncate">
@@ -260,7 +254,7 @@ export default function Messages() {
                 </div>
               )}
 
-              <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2 bg-gradient-soft">
+              <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2">
                 {messages.length === 0 && <p className="text-center text-xs text-muted-foreground py-10">Say hello!</p>}
                 {messages.map(m => {
                   const mine = m.sender_id === user?.id;
@@ -278,8 +272,7 @@ export default function Messages() {
               </div>
 
               <form onSubmit={send} className="p-3 border-t flex gap-2">
-                <Input value={draft} onChange={e => setDraft(e.target.value)}
-                  placeholder="Type a message..." maxLength={2000} />
+                <Input value={draft} onChange={e => setDraft(e.target.value)} placeholder="Type a message..." maxLength={2000} />
                 <Button type="submit" disabled={sending || !draft.trim()}>
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>

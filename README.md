@@ -22,6 +22,8 @@ feedback and an automatically-generated rental history.
 - Browser + in-app message notifications (single subscription, no duplicates)
 - Tenant ↔ Landlord peer feedback (peer-only visibility via RLS)
 - Digital deal flow: propose → accept / reject → pay → branded receipt
+- Monthy billing cycle with auto-generated rental history (visible to landlords for trust)
+- Printable receipts with structured BD address and Google Maps link
 - Mobile hamburger nav + responsive layouts
 
 ### Tenant

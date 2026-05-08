@@ -7,6 +7,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
+// Ensure this matches the file name you created
+import TenantLifeCycle from "./pages/TenantLifeCycle";
+
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -58,6 +61,7 @@ const App = () => (
               {/* Landlord-only: look up & view a specific tenant's history */}
               <Route path="/history/:userId" element={<ProtectedRoute><RentalHistory /></ProtectedRoute>} />
               <Route path="/tenant-lookup" element={<ProtectedRoute requireRole="landlord"><TenantLookup /></ProtectedRoute>} />
+              <Route path="/tenant/life-cycle" element={<ProtectedRoute requireRole="tenant"><TenantLifeCycle /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
