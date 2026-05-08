@@ -23,40 +23,39 @@ export default function RentalHistory() {
     if (!targetUserId) return;
 
     async function fetchFullProfile() {
-      setLoading(true);
-      try {
-        // 1. Fetch Profile and KYC status
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*, kyc_status")
-          .eq("id", targetUserId)
-          .single();
-        
-        if (profileError) throw profileError;
-        setTargetProfile(profileData);
+  setLoading(true);
+  try {
+    // 1. Fetch Profile and KYC status
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("*, kyc_status")
+      .eq("id", targetUserId)
+      .single();
+    
+    if (profileError) throw profileError;
+    setTargetProfile(profileData);
 
-        // 2. Fetch Rent History
-        // We remove .eq("status", "accepted") temporarily so you can see pending data
-        const { data: rentData, error: rentError } = await supabase
-          .from("agreements")
-          .select(`
-            id,
-            created_at,
-            status,
-            listing:listings(title, address, area)
-          `)
-          .eq("tenant_id", targetUserId)
-          .order("created_at", { ascending: false });
-        
-        if (rentError) throw rentError;
-        setHistory(rentData || []);
-      } catch (error: any) {
-        console.error("Fetch error:", error);
-        toast.error("Error loading profile: " + error.message);
-      } finally {
-        setLoading(false);
-      }
-    }
+    // 2. Fetch Rent History - FIXED: using location and district instead of address/area
+    const { data: rentData, error: rentError } = await supabase
+      .from("agreements")
+      .select(`
+        id,
+        created_at,
+        status,
+        listing:listings(title, location, district, thana)
+      `)
+      .eq("tenant_id", targetUserId)
+      .order("created_at", { ascending: false });
+    
+    if (rentError) throw rentError;
+    setHistory(rentData || []);
+  } catch (error: any) {
+    console.error("Fetch error:", error);
+    toast.error("Error loading profile: " + error.message);
+  } finally {
+    setLoading(false);
+  }
+}
 
     fetchFullProfile();
   }, [targetUserId]);
@@ -132,12 +131,12 @@ export default function RentalHistory() {
                    <div className={`absolute -left-[31px] mt-1.5 h-4 w-4 rounded-full border-2 border-white shadow-sm ${item.status === 'accepted' ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
                    
                    <div className="flex items-center gap-2 mb-1">
-                     <p className="font-bold">{item.listing?.area || "Unknown Area"}, Dhaka</p>
+                     <p className="font-bold">{item.listing?.thana || "Unknown Thana"}, {item.listing?.district || "Unknown District"}</p>
                      {item.status !== 'accepted' && (
                        <Badge variant="secondary" className="text-[10px] h-4">Pending Approval</Badge>
                      )}
                    </div>
-                   <p className="text-sm text-muted-foreground">{item.listing?.address || "Address details hidden"}</p>
+                   <p className="text-sm text-muted-foreground">{item.listing?.location || "Location details hidden"}</p>
                    <p className="text-[10px] mt-2 text-primary font-medium bg-primary/10 w-fit px-2 py-0.5 rounded">
                      Record Created: {new Date(item.created_at).toLocaleDateString()}
                    </p>

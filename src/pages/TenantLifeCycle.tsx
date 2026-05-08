@@ -12,20 +12,36 @@ export default function TenantLifeCycle() {
 
   useEffect(() => {
     async function fetchLifeCycle() {
-      if (!user) return;
+      if (!user?.id) return;
+      
       const { data, error } = await supabase
         .from("agreements")
-        .select(`id, status, start_date, end_date, agreed_price, listings (title, location, thana)`)
+        .select(`
+          id, 
+          status, 
+          start_date, 
+          end_date, 
+          listings (
+            title, 
+            location, 
+            thana,
+            district
+          )
+        `)
         .eq("tenant_id", user.id)
         .order("start_date", { ascending: false });
 
-      if (!error) setHistory(data || []);
+      if (error) {
+        console.error("Supabase Error:", error.message);
+      } else {
+        setHistory(data || []);
+      }
       setLoading(false);
     }
     fetchLifeCycle();
-  }, [user]);
+  }, [user?.id]);
 
-  if (loading) return <div className="p-10 text-center text-muted-foreground">Generating timeline...</div>;
+  if (loading) return <div className="p-10 text-center text-muted-foreground">Loading timeline...</div>;
 
   return (
     <div className="container max-w-3xl py-12">
@@ -45,11 +61,15 @@ export default function TenantLifeCycle() {
                 <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>{item.status}</Badge>
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {new Date(item.start_date).getFullYear()} - {item.end_date ? new Date(item.end_date).getFullYear() : 'Present'}
+                  {item.start_date ? new Date(item.start_date).getFullYear() : 'N/A'} - {item.end_date ? new Date(item.end_date).getFullYear() : 'Present'}
                 </span>
               </div>
-              <h3 className="font-bold">{item.listings?.title}</h3>
-              <p className="text-xs text-muted-foreground">{item.listings?.thana || item.listings?.location}</p>
+              <h3 className="font-bold">{item.listings?.title || "Untitled Listing"}</h3>
+              <p className="text-xs text-muted-foreground">
+                {[item.listings?.thana, item.listings?.location, item.listings?.district]
+                  .filter(Boolean)
+                  .join(", ")}
+              </p>
             </Card>
           </div>
         ))}
