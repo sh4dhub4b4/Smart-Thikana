@@ -55,6 +55,7 @@ interface PaymentRow {
   tenant_id: string;
   created_at: string;
   profiles: { full_name: string } | null;
+  listings?: { title: string; property_type?: string } | null;
   tax_transactions?: { net_to_landlord: number }[];
 }
 
