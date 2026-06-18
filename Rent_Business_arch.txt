@@ -1,0 +1,372 @@
+Got it — I reviewed your uploaded document, and I’ll design the **full system architecture diagram** in a format that matches your specification style (clear sections, structured, and implementation-ready).
+
+---
+
+# 🏗️ Two-Sided Matching Rental Platform
+
+## System Architecture Specification
+
+---
+
+## **1. Overview**
+
+This document defines the architecture for a **two-sided rental matchmaking platform** where:
+
+* **Tenants** search for properties
+* **Landlords** list properties
+* The system intelligently **matches both sides using algorithms + scoring + ML**
+
+The architecture supports:
+
+* Real-time search
+* Two-sided matching (tenant ↔ landlord)
+* Recommendation system
+* Messaging & booking workflow
+
+---
+
+## **2. High-Level Architecture Diagram (Logical)**
+
+```
+                ┌──────────────────────────┐
+                │        Frontend          │
+                │ (Web / Mobile Apps)     │
+                └──────────┬──────────────┘
+                           │
+                           ▼
+                ┌──────────────────────────┐
+                │      API Gateway         │
+                │ (Auth, Routing, Rate)   │
+                └──────────┬──────────────┘
+                           │
+ ┌─────────────────────────────────────────────────────────────┐
+ │                    Backend Services                         │
+ │                                                             │
+ │  ┌──────────────┐   ┌──────────────┐   ┌────────────────┐   │
+ │  │ User Service │   │ Listing Svc  │   │ Matching Svc   │   │
+ │  └──────────────┘   └──────────────┘   └────────────────┘   │
+ │                                                             │
+ │  ┌──────────────┐   ┌──────────────┐   ┌────────────────┐   │
+ │  │ Search Svc   │   │ Messaging    │   │ Notification   │   │
+ │  │              │   │ Service      │   │ Service        │   │
+ │  └──────────────┘   └──────────────┘   └────────────────┘   │
+ │                                                             │
+ │              ┌──────────────────────────┐                   │
+ │              │ Recommendation Engine    │                   │
+ │              └──────────────────────────┘                   │
+ └─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+ ┌─────────────────────────────────────────────────────────────┐
+ │                        Data Layer                           │
+ │                                                             │
+ │  SQL DB     NoSQL DB     Cache     Search Index     Data Lake│
+ │ (Users,     (Sessions,   (Redis)   (Elasticsearch) (Logs, ML)│
+ │ Listings)   Activity)                                  │     │
+ └─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+                ┌──────────────────────────┐
+                │   ML & Analytics Layer   │
+                │ (Training + Ranking)     │
+                └──────────────────────────┘
+```
+
+---
+
+## **3. Core Components**
+
+### **3.1 Frontend Layer**
+
+* Mobile App (Flutter / React Native)
+* Web App (React / Vue)
+
+**Responsibilities:**
+
+* Search interface
+* Filters (price, location, type)
+* Profile management
+* Messaging UI
+
+---
+
+### **3.2 API Gateway**
+
+* Authentication (JWT / OAuth)
+* Request routing
+* Rate limiting
+
+---
+
+### **3.3 Backend Microservices**
+
+#### **A. User Service**
+
+* Tenant & landlord profiles
+* Verification (phone/email)
+* Preferences (budget, lifestyle)
+
+---
+
+#### **B. Listing Service**
+
+* Property CRUD
+* Metadata (price, rooms, amenities)
+* Availability status
+
+---
+
+#### **C. Search Service**
+
+* Filtering:
+
+  * Location
+  * Price
+  * Property type
+
+* Powered by:
+
+  * Elasticsearch / OpenSearch
+
+---
+
+#### **D. Matching Service (Core System)**
+
+Handles:
+
+* Two-sided compatibility scoring
+* Ranking algorithm
+* Match generation
+
+---
+
+#### **E. Recommendation Engine**
+
+* Personalized suggestions
+* “Recommended for you”
+* “Similar properties”
+
+---
+
+#### **F. Messaging Service**
+
+* Real-time chat
+* Tenant ↔ landlord communication
+
+---
+
+#### **G. Notification Service**
+
+* Push notifications
+* Alerts (new match, price drop)
+
+---
+
+## **4. Data Layer**
+
+### **4.1 Relational DB (PostgreSQL)**
+
+Stores:
+
+* Users
+* Listings
+* Transactions
+
+---
+
+### **4.2 NoSQL DB (MongoDB)**
+
+Stores:
+
+* Activity logs
+* Click behavior
+* Search history
+
+---
+
+### **4.3 Cache (Redis)**
+
+* Fast retrieval
+* Session management
+* Frequently accessed listings
+
+---
+
+### **4.4 Search Index (Elasticsearch)**
+
+* Fast filtering
+* Geo-based queries
+
+---
+
+### **4.5 Data Lake**
+
+* Logs
+* User behavior
+* ML training data
+
+---
+
+## **5. Matching Algorithm Design**
+
+### **5.1 Step 1: Rule-Based Filtering**
+
+```
+IF budget >= rent
+AND location matches
+AND tenant type allowed
+→ Candidate match
+```
+
+---
+
+### **5.2 Step 2: Scoring Function**
+
+```
+TenantScore = f(budget_fit, preference_match, behavior)
+
+LandlordScore = f(income_fit, tenant_type, rules)
+
+FinalScore = w1 * TenantScore + w2 * LandlordScore
+```
+
+---
+
+### **5.3 Step 3: Ranking (Learning-to-Rank)**
+
+* XGBoost / LightGBM
+* Ranks listings based on:
+
+  * Click probability
+  * Booking likelihood
+
+---
+
+### **5.4 Step 4: Recommendation Models**
+
+#### A. Collaborative Filtering
+
+* “Users like you chose this”
+
+#### B. Content-Based Filtering
+
+* Matches property features
+
+#### C. Embedding Models
+
+* Vector similarity (user ↔ listing)
+
+---
+
+### **5.5 Optional: Stable Matching (Advanced)**
+
+* Gale–Shapley Algorithm
+* Ensures:
+
+  * No better mutual match exists
+
+---
+
+## **6. Real-Time Matching Flow**
+
+### **Tenant Side**
+
+1. User opens app
+2. Applies filters
+3. System:
+
+   * Filters listings
+   * Scores matches
+   * Ranks results
+4. Displays top matches
+
+---
+
+### **Landlord Side**
+
+1. Landlord logs in
+2. Sees interested tenants
+3. System ranks tenants
+4. Suggests best candidates
+
+---
+
+## **7. Event-Driven Architecture**
+
+Uses:
+
+* Kafka / RabbitMQ
+
+Events:
+
+* Listing created
+* User clicked property
+* Message sent
+* Booking confirmed
+
+---
+
+## **8. Feedback Loop (Learning System)**
+
+Collected signals:
+
+* Clicks
+* Saves
+* Messages
+* Bookings
+
+Used to:
+
+* Retrain models
+* Improve ranking
+
+---
+
+## **9. Workflow Integration (Adapted from Your Document Style)**
+
+```
+Step 1: Tenant searches property
+Step 2: System generates matches
+Step 3: Tenant views & contacts landlord
+Step 4: Landlord evaluates tenant
+Step 5: Match confirmed
+Step 6: Booking / agreement completed
+```
+
+---
+
+## **10. Scalability & Performance**
+
+* Horizontal scaling (microservices)
+* CDN for images
+* Load balancing
+* Caching layer (Redis)
+
+---
+
+## **11. Security**
+
+* Authentication (JWT)
+* Role-based access (tenant/landlord/admin)
+* Data encryption (HTTPS)
+* Fraud detection (ML signals)
+
+---
+
+# 🔥 Final Insight
+
+Your original document is **workflow-driven (Quotation → Invoice → Receipt)**
+
+This system is:
+
+> **Data-driven + algorithm-driven + behavior-learning system**
+
+---
+
+If you want next step, I can:
+
+* Convert this into a **visual diagram (like draw.io / system design image)**
+* Or map this into a **real tech stack (AWS / GCP deployment architecture)**
+* Or even turn it into a **startup MVP plan**
+
+Just tell me 👍

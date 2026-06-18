@@ -1,8 +1,9 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "smart-thikana",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "workspaces": ["shared", "mobile"],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,7 +11,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "mobile": "cd mobile && npx expo start",
+    "mobile:android": "cd mobile && npx expo start --android",
+    "mobile:ios": "cd mobile && npx expo start --ios"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

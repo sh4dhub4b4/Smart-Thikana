@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Smart Thikana",
+    "slug": "smart-thikana",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#006A4E",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.smartthikana.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Smart Thikana needs camera access to capture photos for your listing and KYC (identity verification).",
+        "NSPhotoLibraryUsageDescription": "Smart Thikana needs photo library access to upload images for your listing and profile.",
+        "NSLocationWhenInUseUsageDescription": "Smart Thikana needs your location to show nearby rental listings.",
+        "NSFaceIDUsageDescription": "Smart Thikana uses Face ID to securely unlock the app."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#006A4E"
+      },
+      "package": "com.smartthikana.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "USE_BIOMETRIC"
+      ]
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-image-picker",
+      "expo-local-authentication",
+      "expo-notifications",
+      "expo-secure-store"
+    ],
+    "scheme": "smartthikana"
+  }
+}

@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+.expo/
+dist/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Environment
+.env*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Metro
+metro.config.js
+
+# Web
+web-build/
