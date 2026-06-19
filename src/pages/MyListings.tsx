@@ -30,10 +30,11 @@ export default function MyListings() {
 
   const load = async () => {
     if (!user) return;
-    const { data } = await supabase.from("listings").select("*").eq("landlord_id", user.id).order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("listings").select("*").eq("landlord_id", user.id).order("created_at", { ascending: false });
+    if (error) { toast.error(error.message); return; }
     setListings((data as Listing[]) ?? []);
   };
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => { load(); }, [user?.id]);
 
   const remove = async (id: string) => {
     const { error } = await supabase.from("listings").delete().eq("id", id);

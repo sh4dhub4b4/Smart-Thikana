@@ -3,7 +3,7 @@ import { Loader2, MapPin, Star, Wrench, Zap, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useServiceCategories, useServiceProviders } from "./services-api";
+import { useServiceCategories, useServiceProviders, ServiceProvider } from "./services-api";
 import { ServiceBookingFlow } from "./ServiceBookingFlow";
 
 export default function ServicesDashboard() {
@@ -11,7 +11,7 @@ export default function ServicesDashboard() {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
     // 2. State to handle the Single-File Booking Modal
-    const [selectedProvider, setSelectedProvider] = useState<any>(null);
+    const [selectedProvider, setSelectedProvider] = useState<ServiceProvider | null>(null);
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
     // 3. Fetching REAL data via the React Query hooks from services-api.ts
@@ -29,7 +29,7 @@ export default function ServicesDashboard() {
     };
 
     // Handler to open the booking modal with the correct provider context
-    const handleRequestService = (provider: any) => {
+    const handleRequestService = (provider: ServiceProvider) => {
         setSelectedProvider(provider);
         setIsBookingModalOpen(true);
     };

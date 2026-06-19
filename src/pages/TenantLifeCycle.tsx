@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Home, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export default function TenantLifeCycle() {
   const { user } = useAuth();
@@ -32,6 +33,7 @@ export default function TenantLifeCycle() {
 
       if (error) {
         console.error("Supabase Error:", error.message);
+        toast.error("Failed to load rental history");
       } else {
         setHistory(data || []);
       }

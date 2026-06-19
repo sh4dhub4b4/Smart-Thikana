@@ -71,12 +71,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * the role hasn't been chosen yet.
    */
   const loadProfileAndRole = async (uid: string) => {
-    const [{ data: p }, { data: r }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", uid).maybeSingle(),
-    ]);
-    setProfile((p as Profile) ?? null);
-    setRole((r?.role as AppRole) ?? null);
+    try {
+      const [{ data: p }, { data: r }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", uid).maybeSingle(),
+      ]);
+      setProfile((p as Profile) ?? null);
+      setRole((r?.role as AppRole) ?? null);
+    } catch (err) {
+      console.error("Failed to load profile/role:", err);
+    }
   };
 
   /** Public helper so screens can refresh after editing the profile. */
@@ -87,14 +91,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // ── Step 1: subscribe FIRST ───────────────────────────────────────────
     // Fires on SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, USER_UPDATED, etc.
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
 
-      if (newSession?.user) {
+      if (newSession?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
         // Defer to avoid deadlocking the auth client (see header comment).
-        setTimeout(() => loadProfileAndRole(newSession.user.id), 0);
-      } else {
+        const timer = setTimeout(() => { loadProfileAndRole(newSession.user.id).catch(console.error); }, 0);
+        timers.push(timer);
+      } else if (!newSession?.user) {
         // Logged out → clear cached profile/role so no stale data leaks.
         setProfile(null);
         setRole(null);
@@ -114,7 +121,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // Cleanup: unsubscribe on unmount to prevent memory leaks.
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      timers.forEach(clearTimeout);
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   /**

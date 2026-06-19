@@ -12,6 +12,7 @@ interface AdminStats {
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -22,6 +23,7 @@ export default function AdminDashboard() {
       
       if (error) {
         console.error("Error fetching admin stats:", error);
+        setError(error.message);
         return;
       }
       
@@ -29,6 +31,17 @@ export default function AdminDashboard() {
     };
     fetchStats();
   }, []);
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <h1 className="text-3xl font-bold mb-6 text-green-800">Platform Admin Overview</h1>
+        <div className="rounded-md bg-red-50 border border-red-200 p-4 text-red-800">
+          Failed to load admin stats: {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">

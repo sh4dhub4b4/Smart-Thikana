@@ -32,6 +32,7 @@ type Mode = "near" | "by_location";
 export default function TenantHome() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("near");
 
   const [search, setSearch] = useState("");
@@ -54,13 +55,21 @@ export default function TenantHome() {
 
   // Load all active listings once
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("listings").select("*").eq("is_active", true)
-        .order("created_at", { ascending: false });
-      setListings((data as Listing[]) ?? []);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from("listings").select("*").eq("is_active", true)
+          .order("created_at", { ascending: false });
+        if (error) { setFetchError(error.message); return; }
+        if (!cancelled) setListings((data as Listing[]) ?? []);
+      } catch (err: any) {
+        if (!cancelled) setFetchError(err?.message ?? "Failed to load listings");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
+    return () => { cancelled = true; };
   }, []);
 
   // Load BD divisions for the location filter
@@ -188,7 +197,12 @@ export default function TenantHome() {
         </div>
       )}
 
-      {loading ? (
+      {fetchError ? (
+        <div className="text-center py-20 border-2 border-red-200 rounded-lg bg-red-50">
+          <p className="text-red-600 font-medium">Failed to load listings</p>
+          <p className="text-red-500 text-sm mt-1">{fetchError}</p>
+        </div>
+      ) : loading ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="aspect-[4/5] rounded-lg" />)}
         </div>

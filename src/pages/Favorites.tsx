@@ -19,13 +19,19 @@ export default function Favorites() {
   const [listings, setListings] = useState<Listing[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       if (!user) return;
       const ids = Array.from(favoriteIds);
-      if (ids.length === 0) { setListings([]); return; }
-      const { data } = await supabase.from("listings").select("*").in("id", ids).eq("is_active", true);
-      setListings((data as Listing[]) ?? []);
+      if (ids.length === 0) { if (!cancelled) setListings([]); return; }
+      try {
+        const { data, error } = await supabase.from("listings").select("*").in("id", ids).eq("is_active", true);
+        if (!cancelled && !error) setListings((data as Listing[]) ?? []);
+      } catch (err) {
+        if (!cancelled) console.error("Failed to load favorites:", err);
+      }
     })();
+    return () => { cancelled = true; };
   }, [user, favoriteIds]);
 
   return (

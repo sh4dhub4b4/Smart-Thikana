@@ -27,16 +27,16 @@ export default function Receipt() {
           .eq("id", id)
           .maybeSingle();
 
-        if (pError || !p) {
-          setError("Payment record not found");
-          return;
-        }
+        if (pError) { setError(pError.message); return; }
+        if (!p) { setError("Payment record not found"); return; }
+
+        const amount = Number(p.amount);
+        if (isNaN(amount) || amount <= 0) { setError("Invalid payment amount in record"); return; }
 
         setData(p);
         
         const isComm = p.listings?.property_type === 'commercial';
-        // We calculate tax here to show the breakdown on the receipt
-        const breakdown = calculateTaxAutoCut(Number(p.amount), isComm, false);
+        const breakdown = calculateTaxAutoCut(amount, isComm, false);
         setTaxDetails(breakdown);
 
       } catch (err: any) {

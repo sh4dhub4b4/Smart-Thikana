@@ -41,31 +41,40 @@ export default function Feedback() {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Load all feedback the current user is allowed to see.
-  // RLS already filters server-side; we don't need any extra .eq() here.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !role) return;
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
-      const fb = (data as FbRow[]) ?? [];
-      setRows(fb);
-      // Hydrate profile avatars/names for both authors and subjects.
-      const ids = [...new Set(fb.flatMap(r => [r.author_id, r.subject_id]))];
-      if (ids.length) {
-        const { data: profs } = await supabase.from("profiles").select("id, full_name, avatar_url").in("id", ids);
-        const map: Record<string, ProfileLite> = {};
-        (profs ?? []).forEach((p: any) => { map[p.id] = p as ProfileLite; });
-        setProfiles(map);
+      try {
+        const { data } = await supabase.from("feedback").select("*").eq("author_role", role).order("created_at", { ascending: false });
+        if (cancelled) return;
+        const fb = (data as FbRow[]) ?? [];
+        setRows(fb);
+        const ids = [...new Set(fb.flatMap(r => [r.author_id, r.subject_id]))];
+        if (ids.length) {
+          const { data: profs } = await supabase.from("profiles").select("id, full_name, avatar_url").in("id", ids);
+          if (!cancelled) {
+            const map: Record<string, ProfileLite> = {};
+            (profs ?? []).forEach((p: any) => { map[p.id] = p as ProfileLite; });
+            setProfiles(map);
+          }
+        }
+      } catch (err) {
+        if (!cancelled) console.error("Failed to load feedback:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     })();
-  }, [user]);
+    return () => { cancelled = true; };
+  }, [user, role]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !role) return;
     if (!subjectId.trim()) { toast.error("Enter the user ID of the person you're reviewing"); return; }
     if (subjectId.trim() === user.id) { toast.error("You can't review yourself"); return; }
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(subjectId.trim())) { toast.error("Please enter a valid User ID (UUID format)"); return; }
     setSubmitting(true);
     const { data, error } = await supabase.from("feedback").insert({
       author_id: user.id,

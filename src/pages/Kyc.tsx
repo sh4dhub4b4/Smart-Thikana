@@ -49,32 +49,44 @@ export default function Kyc() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase.from("kyc").select("*").eq("user_id", user.id).maybeSingle();
-      if (data) {
-        setRow(data as KycRow);
-        setNidNumber(data.nid_number ?? "");
-        setPaths({
-          nid_front_url: data.nid_front_url ?? "",
-          nid_back_url:  data.nid_back_url ?? "",
-          selfie_url:    data.selfie_url ?? "",
-        });
+      try {
+        const { data, error } = await supabase.from("kyc").select("*").eq("user_id", user.id).maybeSingle();
+        if (cancelled || error) return;
+        if (data) {
+          setRow(data as KycRow);
+          setNidNumber(data.nid_number ?? "");
+          setPaths({
+            nid_front_url: data.nid_front_url ?? "",
+            nid_back_url:  data.nid_back_url ?? "",
+            selfie_url:    data.selfie_url ?? "",
+          });
+        }
+      } catch (err) {
+        if (!cancelled) console.error("Failed to load KYC:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, [user]);
 
   /** Upload one file into `${user.id}/<field>-<timestamp>.ext` and store the path. */
   const handleUpload = async (field: keyof typeof paths, file: File) => {
     if (!user) return;
     if (file.size > 5 * 1024 * 1024) { toast.error("Max file size is 5 MB"); return; }
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) { toast.error("Only JPEG, PNG, WebP, and GIF images are allowed"); return; }
     setUploading(field);
     const ext = file.name.split(".").pop() || "jpg";
     const path = `${user.id}/${field}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("kyc-docs").upload(path, file, { upsert: true });
     setUploading(null);
     if (error) { toast.error(error.message); return; }
-    setPaths(prev => ({ ...prev, [field]: path }));
+    const { data: urlData } = supabase.storage.from("kyc-docs").getPublicUrl(path);
+    const publicUrl = urlData?.publicUrl ?? path;
+    setPaths(prev => ({ ...prev, [field]: publicUrl }));
     toast.success("Uploaded");
   };
 

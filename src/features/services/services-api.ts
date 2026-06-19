@@ -16,6 +16,9 @@ export interface ServiceProvider {
     hourly_rate: number;
     experience_years: number;
     company_name: string | null;
+    thana: string | null;
+    district: string | null;
+    service_categories?: { name: string; icon: string | null } | null;
 }
 
 // ─── 2. Supabase Data Fetching Functions ──────────────────────────────────

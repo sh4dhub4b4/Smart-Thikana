@@ -54,55 +54,72 @@ export default function Messages() {
   // Load Conversations
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     setLoadingConvs(true);
     (async () => {
-      const { data: convs, error } = await supabase
-        .from("conversations")
-        .select("id, listing_id, tenant_id, landlord_id, created_at")
-        .order("created_at", { ascending: false });
-      
-      if (error) { toast.error(error.message); setLoadingConvs(false); return; }
-      const rows = (convs ?? []) as any[];
-      if (rows.length === 0) { setConversations([]); setLoadingConvs(false); return; }
+      try {
+        const { data: convs, error } = await supabase
+          .from("conversations")
+          .select("id, listing_id, tenant_id, landlord_id, created_at")
+          .or(`tenant_id.eq.${user.id},landlord_id.eq.${user.id}`)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        
+        if (error) { toast.error(error.message); setLoadingConvs(false); return; }
+        const rows = (convs ?? []) as any[];
+        if (rows.length === 0) { setConversations([]); setLoadingConvs(false); return; }
 
-      const listingIds = [...new Set(rows.map(r => r.listing_id))];
-      const profileIds = [...new Set(rows.flatMap(r => [r.tenant_id, r.landlord_id]))];
+        const listingIds = [...new Set(rows.map(r => r.listing_id))];
+        const profileIds = [...new Set(rows.flatMap(r => [r.tenant_id, r.landlord_id]))];
 
-      const [{ data: listings }, { data: profiles }] = await Promise.all([
-        supabase.from("listings").select("id, title, price, images").in("id", listingIds),
-        supabase.from("profiles").select("id, full_name, avatar_url, phone").in("id", profileIds),
-      ]);
+        const [{ data: listings }, { data: profiles }] = await Promise.all([
+          supabase.from("listings").select("id, title, price, images").in("id", listingIds),
+          supabase.from("profiles").select("id, full_name, avatar_url, phone").in("id", profileIds),
+        ]);
 
-      const listingMap = new Map((listings ?? []).map((l: any) => [l.id, l as ListingInfo]));
-      const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p as PeerInfo]));
+        if (cancelled) return;
+        const listingMap = new Map((listings ?? []).map((l: any) => [l.id, l as ListingInfo]));
+        const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p as PeerInfo]));
 
-      setConversations(rows.map(r => ({
-        ...r,
-        listing: listingMap.get(r.listing_id) ?? null,
-        tenant: profileMap.get(r.tenant_id) ?? null,
-        landlord: profileMap.get(r.landlord_id) ?? null,
-      })));
-      setLoadingConvs(false);
+        setConversations(rows.map(r => ({
+          ...r,
+          listing: listingMap.get(r.listing_id) ?? null,
+          tenant: profileMap.get(r.tenant_id) ?? null,
+          landlord: profileMap.get(r.landlord_id) ?? null,
+        })));
+      } catch (err) {
+        if (!cancelled) console.error("Failed to load conversations:", err);
+      } finally {
+        if (!cancelled) setLoadingConvs(false);
+      }
     })();
+    return () => { cancelled = true; };
   }, [user]);
 
   // Load Messages & Agreement
   useEffect(() => {
     if (!activeId) return;
+    let cancelled = false;
     (async () => {
-      const [{ data: msgs }, { data: ag }] = await Promise.all([
-        supabase.from("messages").select("*").eq("conversation_id", activeId).order("created_at"),
-        supabase.from("agreements").select("id, status, agreed_price, payments(id)").eq("conversation_id", activeId).maybeSingle(),
-      ]);
-      setMessages((msgs as MsgRow[]) ?? []);
-      setAgreement((ag as AgreementRow) ?? null);
+      try {
+        const [{ data: msgs }, { data: ag }] = await Promise.all([
+          supabase.from("messages").select("*").eq("conversation_id", activeId).order("created_at"),
+          supabase.from("agreements").select("id, status, agreed_price, payments(id)").eq("conversation_id", activeId).maybeSingle(),
+        ]);
+        if (!cancelled) {
+          setMessages((msgs as MsgRow[]) ?? []);
+          setAgreement((ag as AgreementRow) ?? null);
+        }
+      } catch (err) {
+        if (!cancelled) console.error("Failed to load messages:", err);
+      }
     })();
 
     const channel = supabase.channel(`messages:${activeId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${activeId}` },
         (payload) => setMessages(prev => [...prev, payload.new as MsgRow]))
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [activeId]);
 
   useEffect(() => {
@@ -114,11 +131,14 @@ export default function Messages() {
     e.preventDefault();
     if (!draft.trim() || !activeId || !user) return;
     setSending(true);
-    const { error } = await supabase.from("messages").insert({
-      conversation_id: activeId, sender_id: user.id, content: draft.trim().slice(0, 2000),
-    });
-    if (error) toast.error(error.message); else setDraft("");
-    setSending(false);
+    try {
+      const { error } = await supabase.from("messages").insert({
+        conversation_id: activeId, sender_id: user.id, content: draft.trim().slice(0, 2000),
+      });
+      if (error) toast.error(error.message); else setDraft("");
+    } finally {
+      setSending(false);
+    }
   };
 
   // Fixed callPeer function (Fixes error 2304)

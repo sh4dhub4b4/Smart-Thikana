@@ -7,14 +7,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner"; // Or use your shadcn use-toast
 
-// Type based on our database schema
-interface Provider {
-  id: string;
-  company_name: string | null;
-  hourly_rate: number;
-  experience_years: number;
-  service_categories?: { name: string };
-}
+import type { ServiceProvider } from "./services-api";
+
+type Provider = Pick<ServiceProvider, "id" | "company_name" | "hourly_rate" | "experience_years" | "service_categories">;
 
 interface ServiceBookingFlowProps {
   provider: Provider | null;

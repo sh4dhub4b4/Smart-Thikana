@@ -25,20 +25,24 @@ export default function Payment() {
   const [paying, setPaying] = useState(false);
 
   useEffect(() => {
+    if (!agreementId) return;
+    let cancelled = false;
     (async () => {
-      if (!agreementId) return;
-      const { data, error } = await supabase
-        .from("agreements")
-        .select("*, listings(title, location)")
-        .eq("id", agreementId)
-        .maybeSingle();
-      
-      if (error) {
-        console.error("Error fetching agreement:", error);
-        return;
+      try {
+        const { data, error } = await supabase
+          .from("agreements")
+          .select("*, listings(title, location)")
+          .eq("id", agreementId)
+          .maybeSingle();
+        
+        if (cancelled) return;
+        if (error) { console.error("Error fetching agreement:", error); return; }
+        setAgreement(data);
+      } catch (err) {
+        if (!cancelled) console.error("Failed to load agreement:", err);
       }
-      setAgreement(data);
     })();
+    return () => { cancelled = true; };
   }, [agreementId]);
 
 const pay = async (e: React.FormEvent) => {
@@ -52,7 +56,7 @@ const pay = async (e: React.FormEvent) => {
     return;
   }
 
-  if (!name || card.length < 16 || !exp || !cvv) {
+  if (!name || card.replace(/\s/g, '').length < 16 || !exp || !cvv) {
     toast.error("Please fill in all payment details correctly.");
     return;
   }
@@ -71,7 +75,7 @@ const pay = async (e: React.FormEvent) => {
         landlord_id: agreement.landlord_id,
         listing_id: agreement.listing_id,
         amount_due: agreement.agreed_price,
-        billing_month: today, 
+        billing_month: today.slice(0, 7), 
         due_date: today,
         status: 'paid', // Must match invoice_status enum 
         type: 'rent'
@@ -100,9 +104,10 @@ const pay = async (e: React.FormEvent) => {
 
     if (payError) throw new Error(`Payment Record Failed: ${payError.message}`);
 
-    // 3. BACKGROUND TASKS (Ledger & Tax) [cite: 11, 23]
+    // 3. BACKGROUND TASKS (Ledger & Tax)
     // These are wrapped to ensure RLS issues don't stop the tenant's success screen
     try {
+      const tax = calculateTaxAutoCut(agreement.agreed_price);
       await Promise.all([
         supabase.from('ledger_entries').insert({
           payment_id: payData.id,
@@ -115,11 +120,11 @@ const pay = async (e: React.FormEvent) => {
         supabase.from('tax_transactions').insert({
           payment_id: payData.id,
           landlord_id: agreement.landlord_id,
-          gross_rent: calculateTaxAutoCut(agreement.agreed_price).gross_rent,
-          tds_amount: calculateTaxAutoCut(agreement.agreed_price).tds_amount,
-          advance_tax_amount: calculateTaxAutoCut(agreement.agreed_price).advance_tax_this_month,
-          platform_fee: calculateTaxAutoCut(agreement.agreed_price).platform_fee,
-          net_to_landlord: calculateTaxAutoCut(agreement.agreed_price).net_to_landlord,
+          gross_rent: tax.gross_rent,
+          tds_amount: tax.tds_amount,
+          advance_tax_amount: tax.advance_tax_this_month,
+          platform_fee: tax.platform_fee,
+          net_to_landlord: tax.net_to_landlord,
           tax_year: new Date().getFullYear().toString()
         })
       ]);
@@ -127,21 +132,23 @@ const pay = async (e: React.FormEvent) => {
       console.warn("Non-critical logging failed:", logError);
     }
 
-    // 4. UPDATE LEASE STATUS [cite: 3]
-    await supabase
+    // 4. UPDATE LEASE STATUS
+    const { error: updateError } = await supabase
       .from("agreements")
       .update({ 
         status: "active", 
         updated_at: new Date().toISOString() 
       })
       .eq("id", agreement.id);
+    if (updateError) console.error("Failed to update agreement status:", updateError);
 
-    // 5. NOTIFY IN CONVERSATION [cite: 14]
-    await supabase.from("messages").insert({
+    // 5. NOTIFY IN CONVERSATION
+    const { error: msgError } = await supabase.from("messages").insert({
       conversation_id: agreement.conversation_id,
       sender_id: user.id,
       content: `✅ Payment of ${fmtBDT(Number(agreement.agreed_price))} confirmed. Receipt: ${payData.receipt_number}`,
     });
+    if (msgError) console.error("Failed to send confirmation message:", msgError);
 
     toast.success("Payment Successful!");
     navigate(`/receipt/${payData.id}`);

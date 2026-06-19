@@ -63,11 +63,9 @@ export function useFavorites() {
       : await supabase.from("favorites").insert({ user_id: user.id, listing_id: listingId });
 
     if (error) {
-      setIds((prev) => {
-        const next = new Set(prev);
-        if (wasFavorited) next.add(listingId); else next.delete(listingId);
-        return next;
-      });
+      // Full rollback: re-fetch from DB for canonical state
+      const { data } = await supabase.from("favorites").select("listing_id").eq("user_id", user.id);
+      setIds(new Set(data?.map(d => d.listing_id) ?? []));
     }
   };
 

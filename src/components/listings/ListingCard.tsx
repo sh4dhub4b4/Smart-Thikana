@@ -24,6 +24,7 @@ export default function ListingCard({ listing, isFavorite, onToggleFavorite }: P
     <Card className="card-elevated overflow-hidden group flex flex-col">
       <Link to={`/listings/${listing.id}`} className="block relative aspect-[4/3] overflow-hidden">
         <img src={img} alt={listing.title} loading="lazy"
+          onError={(e) => { const t = e.target as HTMLImageElement; if (!t.dataset.fall) { t.dataset.fall = "1"; t.src = `https://placehold.co/600x400/e2e8f0/64748b?text=${encodeURIComponent(listing.title?.[0] || 'P')}`; } }}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         <Badge className="absolute top-3 left-3 bg-background/90 text-foreground border capitalize">
           {listing.property_type}

@@ -5,24 +5,29 @@ export default function HomeServices({ userArea }: { userArea: string }) {
   const [requests, setRequests] = useState<any[]>([]);
 
   useEffect(() => {
-    // Fetch pending jobs in the worker's thana
+    let cancelled = false;
     const fetchJobs = async () => {
-      const { data } = await supabase
-        .from('service_bookings')
-        .select('*, listings(location, thana)')
-        .eq('status', 'pending')
-        .eq('listings.thana', userArea); // Filter by worker's location
-      setRequests(data || []);
+      try {
+        const { data, error } = await supabase
+          .from('service_bookings')
+          .select('*, listings!inner(location, thana)')
+          .eq('status', 'pending')
+          .eq('listings.thana', userArea);
+        if (!cancelled && !error) setRequests(data || []);
+      } catch (err) {
+        if (!cancelled) console.error("Failed to fetch service jobs:", err);
+      }
     };
     fetchJobs();
+    return () => { cancelled = true; };
   }, [userArea]);
 
   const handleResponse = async (bookingId: string, newStatus: 'accepted' | 'rejected') => {
-    await supabase
+    const { error } = await supabase
       .from('service_bookings')
       .update({ status: newStatus })
       .eq('id', bookingId);
-    // Refresh local state
+    if (error) { console.error("Failed to update booking:", error); return; }
     setRequests(prev => prev.filter(r => r.id !== bookingId));
   };
 

@@ -21,9 +21,10 @@ export default function Onboarding() {
   const { user, role, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
-  const [picked, setPicked] = useState<AppRole>(
-    (sessionStorage.getItem("smartthikana:intendedRole") as AppRole) || "tenant"
-  );
+  const [picked, setPicked] = useState<AppRole>(() => {
+    const stored = localStorage.getItem("smartthikana:intendedRole");
+    return stored === "tenant" || stored === "landlord" ? stored : "tenant";
+  });
 
   useEffect(() => {
     if (role) navigate(role === "landlord" ? "/landlord" : "/tenant", { replace: true });
@@ -34,10 +35,10 @@ export default function Onboarding() {
     setSaving(true);
     try {
       const { error } = await supabase.from("user_roles").insert({ user_id: user.id, role: picked });
-      if (error && !error.message.toLowerCase().includes("duplicate")) {
+      if (error && error.code !== '23505') {
         toast.error(error.message); return;
       }
-      sessionStorage.removeItem("smartthikana:intendedRole");
+      localStorage.removeItem("smartthikana:intendedRole");
       await refreshProfile();
       navigate(picked === "landlord" ? "/landlord" : "/tenant", { replace: true });
     } catch (err: any) {

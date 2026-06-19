@@ -215,10 +215,12 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          invoice_id: string | null
           landlord_id: string
           listing_id: string
           receipt_number: string
           status: Database["public"]["Enums"]["payment_status"]
+          tax_deducted: boolean
           tenant_id: string
         }
         Insert: {
@@ -226,10 +228,12 @@ export type Database = {
           amount: number
           created_at?: string
           id?: string
+          invoice_id?: string | null
           landlord_id: string
           listing_id: string
           receipt_number?: string
           status?: Database["public"]["Enums"]["payment_status"]
+          tax_deducted?: boolean
           tenant_id: string
         }
         Update: {
@@ -237,10 +241,12 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          invoice_id?: string | null
           landlord_id?: string
           listing_id?: string
           receipt_number?: string
           status?: Database["public"]["Enums"]["payment_status"]
+          tax_deducted?: boolean
           tenant_id?: string
         }
         Relationships: [
@@ -318,6 +324,193 @@ export type Database = {
         Relationships: []
       }
     }
+      feedback: {
+        Row: {
+          author_id: string
+          author_role: Database["public"]["Enums"]["app_role"]
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          subject_id: string
+        }
+        Insert: {
+          author_id: string
+          author_role: Database["public"]["Enums"]["app_role"]
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          subject_id: string
+        }
+        Update: {
+          author_id?: string
+          author_role?: Database["public"]["Enums"]["app_role"]
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          subject_id?: string
+        }
+        Relationships: []
+      }
+      kyc: {
+        Row: {
+          created_at: string
+          id: string
+          nid_back_url: string | null
+          nid_front_url: string | null
+          nid_number: string | null
+          notes: string | null
+          selfie_url: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nid_back_url?: string | null
+          nid_front_url?: string | null
+          nid_number?: string | null
+          notes?: string | null
+          selfie_url?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nid_back_url?: string | null
+          nid_front_url?: string | null
+          nid_number?: string | null
+          notes?: string | null
+          selfie_url?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ledger_entries: {
+        Row: {
+          created_at: string
+          credit: number | null
+          debit: number | null
+          description: string | null
+          entry_type: Database["public"]["Enums"]["entry_type"]
+          id: string
+          payment_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credit?: number | null
+          debit?: number | null
+          description?: string | null
+          entry_type: Database["public"]["Enums"]["entry_type"]
+          id?: string
+          payment_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credit?: number | null
+          debit?: number | null
+          description?: string | null
+          entry_type?: Database["public"]["Enums"]["entry_type"]
+          id?: string
+          payment_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      rent_invoices: {
+        Row: {
+          agreement_id: string
+          amount_due: number
+          billing_month: string
+          created_at: string
+          due_date: string
+          id: string
+          landlord_id: string
+          listing_id: string
+          status: Database["public"]["Enums"]["invoice_status"]
+          tenant_id: string
+          type: string
+        }
+        Insert: {
+          agreement_id: string
+          amount_due: number
+          billing_month: string
+          created_at?: string
+          due_date: string
+          id?: string
+          landlord_id: string
+          listing_id: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          tenant_id: string
+          type?: string
+        }
+        Update: {
+          agreement_id?: string
+          amount_due?: number
+          billing_month?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          landlord_id?: string
+          listing_id?: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          tenant_id?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      tax_transactions: {
+        Row: {
+          advance_tax_amount: number
+          created_at: string
+          gross_rent: number
+          id: string
+          landlord_id: string
+          net_to_landlord: number
+          payment_id: string
+          platform_fee: number
+          tax_year: string
+          tds_amount: number
+        }
+        Insert: {
+          advance_tax_amount?: number
+          created_at?: string
+          gross_rent: number
+          id?: string
+          landlord_id: string
+          net_to_landlord?: number
+          payment_id: string
+          platform_fee?: number
+          tax_year: string
+          tds_amount?: number
+        }
+        Update: {
+          advance_tax_amount?: number
+          created_at?: string
+          gross_rent?: number
+          id?: string
+          landlord_id?: string
+          net_to_landlord?: number
+          payment_id?: string
+          platform_fee?: number
+          tax_year?: string
+          tds_amount?: number
+        }
+        Relationships: []
+      }
+    }
     Views: {
       [_ in never]: never
     }
@@ -331,8 +524,11 @@ export type Database = {
       }
     }
     Enums: {
-      agreement_status: "pending" | "accepted" | "rejected"
+      agreement_status: "pending" | "accepted" | "rejected" | "active"
       app_role: "tenant" | "landlord"
+      entry_type: "debit" | "credit"
+      invoice_status: "paid" | "unpaid"
+      kyc_status: "pending" | "verified" | "rejected"
       payment_status: "pending" | "completed" | "failed"
       property_type: "apartment" | "house" | "studio" | "room" | "commercial"
     }
@@ -462,8 +658,11 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      agreement_status: ["pending", "accepted", "rejected"],
+      agreement_status: ["pending", "accepted", "rejected", "active"],
       app_role: ["tenant", "landlord"],
+      entry_type: ["debit", "credit"],
+      invoice_status: ["paid", "unpaid"],
+      kyc_status: ["pending", "verified", "rejected"],
       payment_status: ["pending", "completed", "failed"],
       property_type: ["apartment", "house", "studio", "room", "commercial"],
     },

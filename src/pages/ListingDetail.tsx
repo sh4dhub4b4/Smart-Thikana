@@ -3,7 +3,7 @@
  * Tenants can start a conversation here, which lands them in /messages.
  */
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, BedDouble, Bath, MapPin, Heart, Phone, MessageSquare, Loader2, Maximize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -41,18 +41,26 @@ export default function ListingDetail() {
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       if (!id) return;
-      const { data: l } = await supabase.from("listings").select("*").eq("id", id).maybeSingle();
-      setListing(l as Listing | null);
-      if (l) {
-        const { data: p } = await supabase.from("profiles")
-          .select("id, full_name, phone, avatar_url, business_name")
-          .eq("id", l.landlord_id).maybeSingle();
-        setLandlord(p as LandlordInfo | null);
+      try {
+        const { data: l } = await supabase.from("listings").select("*").eq("id", id).maybeSingle();
+        if (cancelled) return;
+        setListing(l as Listing | null);
+        if (l) {
+          const { data: p } = await supabase.from("profiles")
+            .select("id, full_name, phone, avatar_url, business_name")
+            .eq("id", l.landlord_id).maybeSingle();
+          if (!cancelled) setLandlord(p as LandlordInfo | null);
+        }
+      } catch (err) {
+        if (!cancelled) console.error("Failed to load listing:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, [id]);
 
   const startConversation = async () => {
@@ -138,7 +146,7 @@ export default function ListingDetail() {
                 <DetailRow label="Floor & unit" value={listing.floor_unit} />
                 <DetailRow label="Landmarks" value={listing.landmarks} />
                 <DetailRow label="GPS / Plus code" value={listing.geo_location} />
-                {listing.latitude && listing.longitude && (
+                {listing.latitude != null && listing.longitude != null && (
                   <DetailRow
                     label="Coordinates"
                     value={
@@ -171,13 +179,13 @@ export default function ListingDetail() {
             <p className="text-xs text-muted-foreground mb-4">Listed on {new Date(listing.created_at).toLocaleDateString()}</p>
 
             {landlord && (
-              <Link to={`#`} className="flex items-center gap-3 p-3 rounded-md bg-muted/50 mb-4">
+              <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50 mb-4">
                 <Avatar><AvatarImage src={landlord.avatar_url ?? undefined} /><AvatarFallback>{landlord.full_name?.[0] ?? "L"}</AvatarFallback></Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{landlord.business_name || landlord.full_name}</p>
                   <p className="text-xs text-muted-foreground">Landlord</p>
                 </div>
-              </Link>
+              </div>
             )}
 
             {user && role === "tenant" ? (

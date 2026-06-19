@@ -35,6 +35,7 @@ import { toast } from "sonner";
 const schema = z.object({
   title: z.string().trim().min(3, "Title too short").max(120),
   price: z.number().positive("Price must be > 0").max(10_000_000),
+  property_type: z.enum(["apartment", "house", "studio", "room", "commercial"]),
   bedrooms: z.number().int().min(0).max(20),
   bathrooms: z.number().int().min(0).max(20),
   area_sqft: z.number().int().min(0).max(100000).nullable(),
@@ -55,7 +56,7 @@ export default function ListingForm() {
   // ── Property basics ───────────────────────────────────────────────────────
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState<number>(15000);
+  const [price, setPrice] = useState<number | "">(15000);
   const [propertyType, setPropertyType] = useState<PropertyType>("apartment");
   const [bedrooms, setBedrooms] = useState(1);
   const [bathrooms, setBathrooms] = useState(1);
@@ -113,9 +114,16 @@ export default function ListingForm() {
   // Load existing listing for edit mode
   useEffect(() => {
     if (!editing) return;
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase.from("listings").select("*").eq("id", id!).maybeSingle();
-      if (!data) return;
+      try {
+        const { data, error } = await supabase.from("listings").select("*").eq("id", id!).maybeSingle();
+        if (cancelled || error || !data) return;
+        if (data.landlord_id !== user?.id) {
+          toast.error("You can only edit your own listings");
+          navigate("/landlord/listings");
+          return;
+        }
       setTitle(data.title); setDescription(data.description ?? "");
       setPrice(Number(data.price)); setPropertyType(data.property_type);
       setBedrooms(data.bedrooms); setBathrooms(data.bathrooms);
@@ -132,8 +140,12 @@ export default function ListingForm() {
       setLandmarks(data.landmarks ?? ""); setGeoLocation(data.geo_location ?? "");
       setBuildingType((data.building_type as BuildingType) ?? "residential_flat");
       setLatitude(data.latitude); setLongitude(data.longitude);
+      } catch (err) {
+        if (!cancelled) console.error("Failed to load listing for edit:", err);
+      }
     })();
-  }, [id, editing]);
+    return () => { cancelled = true; };
+  }, [id, editing, user?.id, navigate]);
 
   /** Use the browser geolocation API to capture lat/lng for this listing. */
   const captureCurrentLocation = () => {
@@ -154,6 +166,12 @@ export default function ListingForm() {
     if (!user || !file) return;
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Max file size is 5 MB");
+      return;
+    }
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPEG, PNG, WebP, and GIF images are allowed");
+      e.target.value = '';
       return;
     }
 
@@ -181,8 +199,6 @@ export default function ListingForm() {
     setImages(prev => [...prev, data.publicUrl].slice(0, 10));
     setUploadingImage(false);
     toast.success("Image uploaded");
-
-    // Reset the input so the user can upload another file
     e.target.value = '';
   };
 
@@ -194,7 +210,8 @@ export default function ListingForm() {
     e.preventDefault();
     if (!user) return;
     const parsed = schema.safeParse({
-      title, price: Number(price), bedrooms: Number(bedrooms), bathrooms: Number(bathrooms),
+      title, price: Number(price), property_type: propertyType,
+      bedrooms: Number(bedrooms), bathrooms: Number(bathrooms),
       area_sqft: area === "" ? null : Number(area),
       division, district, thana, area_moholla: areaMoholla, holding_number: holdingNumber,
     });
@@ -265,7 +282,7 @@ export default function ListingForm() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Monthly rent (BDT) *</Label>
-              <Input type="number" value={price} onChange={e => setPrice(Number(e.target.value))} />
+              <Input type="number" value={price} onChange={e => setPrice(e.target.value === "" ? "" : Number(e.target.value))} />
             </div>
             <div><Label>Property type *</Label>
               <Select value={propertyType} onValueChange={(v) => setPropertyType(v as PropertyType)}>

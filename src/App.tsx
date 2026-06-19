@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
@@ -37,7 +36,6 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
       <BrowserRouter>
         <AuthProvider>
           <Routes>
@@ -62,7 +60,7 @@ const App = () => (
               {/* Tenant rental history (auto-generated from completed payments) */}
               <Route path="/history" element={<ProtectedRoute requireRole="tenant"><RentalHistory /></ProtectedRoute>} />
               {/* Landlord-only: look up & view a specific tenant's history */}
-              <Route path="/history/:userId" element={<ProtectedRoute><RentalHistory /></ProtectedRoute>} />
+              <Route path="/history/:userId" element={<ProtectedRoute requireRole="landlord"><RentalHistory /></ProtectedRoute>} />
               <Route path="/tenant-lookup" element={<ProtectedRoute requireRole="landlord"><TenantLookup /></ProtectedRoute>} />
               <Route path="/tenant/life-cycle" element={<ProtectedRoute requireRole="tenant"><TenantLifeCycle /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />

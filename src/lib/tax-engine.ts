@@ -61,6 +61,6 @@ export const calculateTaxAutoCut = (
     tds_amount: Number(tdsAmount.toFixed(2)),
     advance_tax_this_month: Number(advanceTaxMonthly.toFixed(2)),
     platform_fee: Number(platformFee.toFixed(2)),
-    net_to_landlord: Number((grossRent - (tdsAmount + advanceTaxMonthly + platformFee)).toFixed(2))
+    net_to_landlord: Number(Math.max(0, grossRent - (tdsAmount + advanceTaxMonthly + platformFee)).toFixed(2))
   };
 };

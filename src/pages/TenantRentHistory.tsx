@@ -14,23 +14,24 @@ export default function TenantRentHistory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchRentHistory() {
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from("rent_invoices")
-        .select(`
-          *,
-          listings (title, location)
-        `)
-        .eq("tenant_id", user.id)
-        .order("billing_month", { ascending: false });
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("rent_invoices")
+          .select(`*, listings (title, location)`)
+          .eq("tenant_id", user.id)
+          .order("billing_month", { ascending: false });
 
-      if (!error) setInvoices(data || []);
-      setLoading(false);
-    }
-
-    fetchRentHistory();
+        if (!cancelled && !error) setInvoices(data || []);
+      } catch (err) {
+        if (!cancelled) console.error("Failed to load rent history:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user]);
 
   if (loading) return <div className="p-8 text-center">Loading rent records...</div>;
@@ -64,7 +65,7 @@ export default function TenantRentHistory() {
                   </div>
                   <div>
                     <p className="font-bold text-lg">
-                      {new Date(invoice.billing_month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      {(() => { const [y, m] = (invoice.billing_month || '').split('-'); return y && m ? new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : invoice.billing_month; })()}
                     </p>
                     <p className="text-sm text-muted-foreground">{invoice.listings?.title}</p>
                     <p className="text-xs text-muted-foreground mt-1">Due by: {new Date(invoice.due_date).toLocaleDateString()}</p>
@@ -85,13 +86,13 @@ export default function TenantRentHistory() {
                         Pay Now <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
-                  ) : (
+                  ) : invoice.payment_id ? (
                     <Button variant="outline" size="sm" asChild>
                       <Link to={`/receipt/${invoice.payment_id}`}>
                         <Receipt className="mr-2 h-4 w-4" /> Receipt
                       </Link>
                     </Button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </Card>

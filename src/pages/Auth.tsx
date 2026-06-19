@@ -23,7 +23,8 @@ const nameSchema = z.string().trim().min(2, "Enter your name").max(100);
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
-  const intendedRole: AppRole = (location.state as any)?.intendedRole ?? "tenant";
+  const rawIntended = (location.state as any)?.intendedRole;
+  const intendedRole: AppRole = rawIntended === "tenant" || rawIntended === "landlord" ? rawIntended : "tenant";
 
   const { user, role, loading: authLoading } = useAuth();
   const [tab, setTab] = useState<"signin" | "signup">("signup");
@@ -35,11 +36,12 @@ export default function Auth() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      // If already has a role, route directly. Otherwise let onboarding handle it.
+      const from = (location.state as any)?.from?.pathname;
+      if (from) { navigate(from, { replace: true }); return; }
       if (role) navigate(role === "landlord" ? "/landlord" : "/tenant", { replace: true });
       else navigate("/onboarding", { replace: true });
     }
-  }, [user, role, authLoading, navigate]);
+  }, [user, role, authLoading, navigate, location.state]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +65,7 @@ export default function Auth() {
       if (error) { toast.error(error.message); return; }
       if (!data.session) {
         toast.success("Check your email to confirm your account.");
+        setSubmitting(false);
         return;
       }
       if (data.user) {
@@ -85,14 +88,18 @@ export default function Auth() {
     try { emailSchema.parse(email); passwordSchema.parse(password); }
     catch (err: any) { toast.error(err.errors?.[0]?.message ?? "Invalid input"); return; }
     setSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) toast.error(error.message);
-    setSubmitting(false);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) toast.error(error.message);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Sign in failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleGoogle = async () => {
-    // Stash the intended role so onboarding can pick it up
-    sessionStorage.setItem("smartthikana:intendedRole", selectedRole);
+    localStorage.setItem("smartthikana:intendedRole", selectedRole);
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     if (result.error) toast.error("Google sign-in failed");
   };

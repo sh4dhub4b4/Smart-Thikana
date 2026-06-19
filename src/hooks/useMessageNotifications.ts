@@ -53,14 +53,14 @@ export function useMessageNotificationsRoot() {
   // Ask the browser for notification permission once.
   useEffect(() => {
     if (typeof Notification !== "undefined" && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
+      Notification.requestPermission().catch((err) => console.warn("Notification permission error:", err));
     }
   }, []);
 
   // Subscribe to ALL message inserts; RLS limits us to conversations we
   // participate in, so this is safe and efficient.
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setGlobal(0); return; }
 
     const channel = supabase
       .channel(`user-messages:${user.id}`)
@@ -78,7 +78,7 @@ export function useMessageNotificationsRoot() {
             if (url.pathname === "/messages" && url.searchParams.get("c") === msg.conversation_id) return;
           }
 
-          setGlobal(globalUnread + 1);
+          setGlobal(n => n + 1);
 
           // Look up the sender's display name for a friendlier toast.
           const { data: sender } = await supabase
@@ -108,5 +108,5 @@ export function useMessageNotificationsRoot() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, navigate]);
+  }, [user]);
 }

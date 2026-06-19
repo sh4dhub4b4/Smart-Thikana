@@ -52,7 +52,15 @@ export default function Profile() {
     toast.success("User ID copied");
   };
 
-  if (!profile) return <div className="container py-20 grid place-items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (!profile && !user) return <div className="container py-20 grid place-items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (!profile) return (
+    <div className="container py-20 grid place-items-center">
+      <div className="text-center">
+        <p className="text-muted-foreground mb-2">Failed to load profile.</p>
+        <Button variant="outline" onClick={refreshProfile}>Retry</Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="container max-w-2xl py-8">
