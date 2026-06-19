@@ -52,22 +52,32 @@ export default function Auth() {
       return;
     }
     setSubmitting(true);
-    const { data, error } = await supabase.auth.signUp({
-      email, password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name: fullName, intended_role: selectedRole },
-      },
-    });
-    if (error) { toast.error(error.message); setSubmitting(false); return; }
-    if (data.user) {
-      // Insert role (the profile is auto-created by trigger; we update name)
-      await supabase.from("user_roles").insert({ user_id: data.user.id, role: selectedRole });
-      await supabase.from("profiles").update({ full_name: fullName }).eq("id", data.user.id);
-      toast.success("Welcome to Smart Thikana!");
-      navigate(selectedRole === "landlord" ? "/landlord" : "/tenant", { replace: true });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email, password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: { full_name: fullName, intended_role: selectedRole },
+        },
+      });
+      if (error) { toast.error(error.message); return; }
+      if (!data.session) {
+        toast.success("Check your email to confirm your account.");
+        return;
+      }
+      if (data.user) {
+        const { error: roleError } = await supabase.from("user_roles").insert({ user_id: data.user.id, role: selectedRole });
+        if (roleError) { toast.error("Failed to save role: " + roleError.message); return; }
+        const { error: profileError } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", data.user.id);
+        if (profileError) console.error("Profile update failed:", profileError);
+        toast.success("Welcome to Smart Thikana!");
+        navigate(selectedRole === "landlord" ? "/landlord" : "/tenant", { replace: true });
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? "Sign up failed");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -82,7 +92,7 @@ export default function Auth() {
 
   const handleGoogle = async () => {
     // Stash the intended role so onboarding can pick it up
-    sessionStorage.setItem("bashabari:intendedRole", selectedRole);
+    sessionStorage.setItem("smartthikana:intendedRole", selectedRole);
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
     if (result.error) toast.error("Google sign-in failed");
   };

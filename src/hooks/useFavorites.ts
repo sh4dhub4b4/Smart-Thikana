@@ -49,30 +49,25 @@ export function useFavorites() {
    * Optimistic: state is updated immediately for snappy UI.
    */
   const toggle = async (listingId: string) => {
-    if (!user) return;  // Defensive — UI should hide the heart for guests.
+    if (!user) return;
 
-    if (ids.has(listingId)) {
-      // ── Currently favorited → remove ────────────────────────────────────
-      await supabase
-        .from("favorites")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("listing_id", listingId);
+    const wasFavorited = ids.has(listingId);
+    setIds((prev) => {
+      const next = new Set(prev);
+      if (wasFavorited) next.delete(listingId); else next.add(listingId);
+      return next;
+    });
 
+    const { error } = wasFavorited
+      ? await supabase.from("favorites").delete().eq("user_id", user.id).eq("listing_id", listingId)
+      : await supabase.from("favorites").insert({ user_id: user.id, listing_id: listingId });
+
+    if (error) {
       setIds((prev) => {
         const next = new Set(prev);
-        next.delete(listingId);
+        if (wasFavorited) next.add(listingId); else next.delete(listingId);
         return next;
       });
-    } else {
-      // ── Not favorited yet → add ─────────────────────────────────────────
-      // The UNIQUE(user_id, listing_id) constraint on the table prevents
-      // duplicate rows even under double-click race conditions.
-      await supabase
-        .from("favorites")
-        .insert({ user_id: user.id, listing_id: listingId });
-
-      setIds((prev) => new Set(prev).add(listingId));
     }
   };
 

@@ -23,7 +23,7 @@ export default function Favorites() {
       if (!user) return;
       const ids = Array.from(favoriteIds);
       if (ids.length === 0) { setListings([]); return; }
-      const { data } = await supabase.from("listings").select("*").in("id", ids);
+      const { data } = await supabase.from("listings").select("*").in("id", ids).eq("is_active", true);
       setListings((data as Listing[]) ?? []);
     })();
   }, [user, favoriteIds]);

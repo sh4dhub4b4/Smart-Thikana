@@ -19,8 +19,7 @@ export default function TenantLifeCycle() {
         .select(`
           id, 
           status, 
-          start_date, 
-          end_date, 
+          created_at,
           listings (
             title, 
             location, 
@@ -29,7 +28,7 @@ export default function TenantLifeCycle() {
           )
         `)
         .eq("tenant_id", user.id)
-        .order("start_date", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Supabase Error:", error.message);
@@ -61,7 +60,7 @@ export default function TenantLifeCycle() {
                 <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>{item.status}</Badge>
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {item.start_date ? new Date(item.start_date).getFullYear() : 'N/A'} - {item.end_date ? new Date(item.end_date).getFullYear() : 'Present'}
+                  {item.created_at ? new Date(item.created_at).getFullYear() : 'N/A'} - Present
                 </span>
               </div>
               <h3 className="font-bold">{item.listings?.title || "Untitled Listing"}</h3>

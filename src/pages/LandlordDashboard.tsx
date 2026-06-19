@@ -77,7 +77,7 @@ export default function LandlordDashboard() {
   const load = async () => {
     if (!user) return;
 
-    const [{ data: ls }, { data: pays }, { data: ags }] = await Promise.all([
+    const [lsRes, paysRes, agsRes] = await Promise.allSettled([
       supabase.from("listings").select("*").eq("landlord_id", user.id).order("created_at", { ascending: false }),
       supabase.from("payments")
         .select("*, listings(title), tax_transactions(net_to_landlord)")
@@ -90,9 +90,9 @@ export default function LandlordDashboard() {
         .order("created_at", { ascending: false })
     ]);
 
-    const listings = (ls as Listing[]) ?? [];
-    const rawAgreements = (ags as any[]) ?? [];
-    const rawPayments = (pays as any[]) ?? [];
+    const listings = (lsRes.status === "fulfilled" ? (lsRes.value.data as Listing[]) : []) ?? [];
+    const rawAgreements = (agsRes.status === "fulfilled" ? (agsRes.value.data as any[]) : []) ?? [];
+    const rawPayments = (paysRes.status === "fulfilled" ? (paysRes.value.data as any[]) : []) ?? [];
 
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -142,9 +142,10 @@ export default function LandlordDashboard() {
 
   useEffect(() => {
     load();
+    if (!user?.id) return;
     const channel = supabase.channel('db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agreements', filter: `landlord_id=eq.${user?.id}` }, () => load())
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'payments', filter: `landlord_id=eq.${user?.id}` }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agreements', filter: `landlord_id=eq.${user.id}` }, () => load())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'payments', filter: `landlord_id=eq.${user.id}` }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user?.id]);

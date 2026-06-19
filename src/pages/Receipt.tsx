@@ -56,7 +56,7 @@ export default function Receipt() {
     <div className="min-h-screen bg-slate-50 py-12 px-4">
       <div className="max-w-2xl mx-auto mb-6 no-print">
         <Button variant="ghost" size="sm" asChild className="text-slate-500 hover:text-slate-800">
-          <Link to="/LandlordDashboard"><ArrowLeft className="h-4 w-4 mr-2" /> Dashboard</Link>
+          <Link to="/landlord"><ArrowLeft className="h-4 w-4 mr-2" /> Dashboard</Link>
         </Button>
       </div>
 
@@ -147,7 +147,7 @@ export default function Receipt() {
             <Download className="h-4 w-4 mr-2" /> Download Receipt
           </Button>
           <Button variant="outline" className="flex-1 h-11" asChild>
-            <Link to="/LandlordDashboard">Done</Link>
+            <Link to="/landlord">Done</Link>
           </Button>
         </div>
 

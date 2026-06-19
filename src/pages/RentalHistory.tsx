@@ -12,10 +12,10 @@ export default function RentalHistory() {
   const { userId } = useParams();
   const { user } = useAuth();
   
-  // Use ID from URL (Landlord view) or current user ID (Tenant self-view)
   const targetUserId = userId || user?.id;
 
   const [targetProfile, setTargetProfile] = useState<any>(null);
+  const [kycStatus, setKycStatus] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,39 +23,37 @@ export default function RentalHistory() {
     if (!targetUserId) return;
 
     async function fetchFullProfile() {
-  setLoading(true);
-  try {
-    // 1. Fetch Profile and KYC status
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("*, kyc_status")
-      .eq("id", targetUserId)
-      .single();
-    
-    if (profileError) throw profileError;
-    setTargetProfile(profileData);
+      setLoading(true);
+      try {
+        const [{ data: profileData, error: profileError }, { data: kycData }] = await Promise.all([
+          supabase.from("profiles").select("*").eq("id", targetUserId).single(),
+          supabase.from("kyc").select("status").eq("user_id", targetUserId).maybeSingle(),
+        ]);
 
-    // 2. Fetch Rent History - FIXED: using location and district instead of address/area
-    const { data: rentData, error: rentError } = await supabase
-      .from("agreements")
-      .select(`
-        id,
-        created_at,
-        status,
-        listing:listings(title, location, district, thana)
-      `)
-      .eq("tenant_id", targetUserId)
-      .order("created_at", { ascending: false });
-    
-    if (rentError) throw rentError;
-    setHistory(rentData || []);
-  } catch (error: any) {
-    console.error("Fetch error:", error);
-    toast.error("Error loading profile: " + error.message);
-  } finally {
-    setLoading(false);
-  }
-}
+        if (profileError) throw profileError;
+        setTargetProfile(profileData);
+        setKycStatus((kycData as any)?.status ?? null);
+
+        const { data: rentData, error: rentError } = await supabase
+          .from("agreements")
+          .select(`
+            id,
+            created_at,
+            status,
+            listing:listings(title, location, district, thana)
+          `)
+          .eq("tenant_id", targetUserId)
+          .order("created_at", { ascending: false });
+
+        if (rentError) throw rentError;
+        setHistory(rentData || []);
+      } catch (error: any) {
+        console.error("Fetch error:", error);
+        toast.error("Error loading profile: " + error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
 
     fetchFullProfile();
   }, [targetUserId]);
@@ -93,7 +91,7 @@ export default function RentalHistory() {
           <div className="flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-3xl font-bold">{targetProfile?.full_name || "Anonymous User"}</h2>
-              {targetProfile?.kyc_status === 'verified' && (
+              {kycStatus === 'verified' && (
                 <Badge className="bg-blue-600">
                   <ShieldCheck className="h-3 w-3 mr-1"/> KYC Verified
                 </Badge>
@@ -170,7 +168,7 @@ export default function RentalHistory() {
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">ID (KYC) Verified</span>
-                <span className="font-bold capitalize">{targetProfile?.kyc_status || "unverified"}</span>
+                <span className="font-bold capitalize">{kycStatus || "unverified"}</span>
               </div>
             </div>
           </Card>
