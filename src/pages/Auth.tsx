@@ -64,7 +64,7 @@ export default function Auth() {
       // Insert role (the profile is auto-created by trigger; we update name)
       await supabase.from("user_roles").insert({ user_id: data.user.id, role: selectedRole });
       await supabase.from("profiles").update({ full_name: fullName }).eq("id", data.user.id);
-      toast.success("Welcome to Bashabari!");
+      toast.success("Welcome to Smart Thikana!");
       navigate(selectedRole === "landlord" ? "/landlord" : "/tenant", { replace: true });
     }
     setSubmitting(false);
@@ -92,7 +92,7 @@ export default function Auth() {
       <div className="w-full max-w-md animate-fade-in-up">
         <Card className="p-6 sm:p-8 shadow-lg">
           <div className="text-center mb-6">
-            <h1 className="font-display text-2xl font-bold">Welcome to Bashabari</h1>
+            <h1 className="font-display text-2xl font-bold">Welcome to Smart Thikana</h1>
             <p className="text-sm text-muted-foreground">Sign in or create an account to continue</p>
           </div>
 
