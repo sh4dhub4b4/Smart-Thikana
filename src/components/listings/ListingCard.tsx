@@ -22,23 +22,26 @@ export default function ListingCard({ listing, isFavorite, onToggleFavorite }: P
 
   return (
     <Card className="card-elevated overflow-hidden group flex flex-col">
-      <Link to={`/listings/${listing.id}`} className="block relative aspect-[4/3] overflow-hidden">
-        <img src={img} alt={listing.title} loading="lazy"
-          onError={(e) => { const t = e.target as HTMLImageElement; if (!t.dataset.fall) { t.dataset.fall = "1"; t.src = `https://placehold.co/600x400/e2e8f0/64748b?text=${encodeURIComponent(listing.title?.[0] || 'P')}`; } }}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-        <Badge className="absolute top-3 left-3 bg-background/90 text-foreground border capitalize">
+      <div className="relative aspect-[4/3] overflow-hidden">
+        <Link to={`/listings/${listing.id}`} className="block h-full w-full">
+          <img src={img} alt={listing.title} loading="lazy"
+            onError={(e) => { const t = e.target as HTMLImageElement; if (!t.dataset.fall) { t.dataset.fall = "1"; t.src = `https://placehold.co/600x400/e2e8f0/64748b?text=${encodeURIComponent(listing.title?.[0] || 'P')}`; } }}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        </Link>
+        <Badge className="absolute top-3 left-3 bg-background/90 text-foreground border capitalize z-10">
           {listing.property_type}
         </Badge>
         {onToggleFavorite && (
           <Button
             type="button" size="icon" variant="secondary"
-            onClick={(e) => { e.preventDefault(); onToggleFavorite(listing.id); }}
-            className="absolute top-3 right-3 h-9 w-9 rounded-full bg-background/90 hover:bg-background"
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(listing.id); }}
+            className="absolute top-3 right-3 h-9 w-9 rounded-full bg-background/90 hover:bg-background z-10"
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart className={`h-4 w-4 ${isFavorite ? "fill-accent text-accent" : ""}`} />
           </Button>
         )}
-      </Link>
+      </div>
       <div className="p-4 flex-1 flex flex-col">
         <Link to={`/listings/${listing.id}`} className="font-display font-semibold text-base hover:text-primary line-clamp-1">
           {listing.title}

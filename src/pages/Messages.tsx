@@ -242,7 +242,7 @@ export default function Messages() {
                       {agreement.status}
                     </Badge>
                   )}
-                  <Button size="sm" variant="outline" onClick={callPeer} className="h-9 w-9 p-0">
+                  <Button size="sm" variant="outline" onClick={callPeer} className="h-9 w-9 p-0" aria-label="Call">
                     <Phone className="h-4 w-4" />
                   </Button>
                 </div>

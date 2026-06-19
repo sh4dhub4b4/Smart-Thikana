@@ -2,9 +2,9 @@
  * Navbar — top navigation with Bashabari branding and the
  * mygov.bd-style green/red accent stripe.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Building2, LogOut, MessageSquare, Heart, LayoutDashboard, User, ShieldCheck, Star, History, Search, Menu } from "lucide-react";
+import { Building2, LogOut, MessageSquare, Heart, LayoutDashboard, User, ShieldCheck, Star, History, Search, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -23,6 +23,12 @@ export default function Navbar() {
   const { user, profile, role, signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Dark mode state
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+  }, [dark]);
+
   // Owns the realtime subscription for the entire app (mounted exactly once
   // here in the Navbar). All other components only READ via useMessageNotifications().
   useMessageNotificationsRoot();
@@ -78,7 +84,11 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {/* Dark mode toggle */}
+          <Button variant="ghost" size="icon" onClick={() => setDark(d => !d)} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}>
+            {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
           {/* Mobile hamburger — exposes the same nav links inside a sheet
               because the desktop <nav> is hidden below md. */}
           {user && links.length > 0 && (

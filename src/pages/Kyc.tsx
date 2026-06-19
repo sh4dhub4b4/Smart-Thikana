@@ -134,7 +134,7 @@ export default function Kyc() {
 
         <div>
           <Label>NID Number</Label>
-          <Input value={nidNumber} onChange={e => setNidNumber(e.target.value)} placeholder="10 / 13 / 17 digits" maxLength={30} />
+          <Input value={nidNumber} onChange={e => setNidNumber(e.target.value)} placeholder="10 / 13 / 17 digits" maxLength={30} aria-label="NID number" />
         </div>
 
         <UploadField label="NID — Front side" field="nid_front_url"

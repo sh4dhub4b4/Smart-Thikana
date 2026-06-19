@@ -119,3 +119,14 @@
 - `src/features/services/ServiceBookingFlow.tsx`: Pick<ServiceProvider> instead of local type
 - `backend/volumes/db/01-schema.sql`: Full DB schema — added rent_invoices, kyc, ledger_entries, tax_transactions, payment extensions, plan types
 - `supabase/migrations/20260620000000_add_missing_tables.sql`: Migration for all missing tables + enums + columns
+- **UI/UX Session (Jun 20)**:
+  - **Navbar.tsx**: Added dark/light mode toggle with Moon/Sun icon; state persisted via `<html>` class toggle
+  - **AppLayout.tsx**: Added `animate-fade-in` page transition; `key={location.pathname}` re-triggers animation per route
+  - **index.css**: Added `@keyframes fade-in` (8px translateY + opacity); `prefers-reduced-motion` respect
+  - **App.css**: Stripped all Vite boilerplate (dead code; app only imports `index.css`)
+  - **Landing.tsx**: Fixed "Bashabari" → "Smart Thikana" in CTA; added `type="button"` to role cards to prevent accidental submit
+  - **NotFound.tsx**: Replaced `<a href="/"` with `<Link to="/"` via shadcn Button + Home icon; cleaner layout
+  - **ListingCard.tsx**: Restructured to eliminate nested `<button>` inside `<a>` — image wrapped in Link directly; favorite button uses `e.stopPropagation()` instead of `e.preventDefault()`; added `aria-label`
+  - **Messages.tsx**: Added `aria-label="Call"` to phone action button
+  - **Feedback.tsx**: Added `aria-label` like `"Rate 3 stars"` to each star button
+  - **Kyc.tsx**: Added `aria-label="NID number"` to text input

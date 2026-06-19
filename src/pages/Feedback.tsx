@@ -120,7 +120,7 @@ export default function Feedback() {
             <Label>Rating</Label>
             <div className="flex gap-1 mt-1">
               {[1, 2, 3, 4, 5].map(n => (
-                <button key={n} type="button" onClick={() => setRating(n)}>
+                <button key={n} type="button" onClick={() => setRating(n)} aria-label={`Rate ${n} star${n > 1 ? 's' : ''}`}>
                   <Star className={`h-7 w-7 transition ${n <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"}`} />
                 </button>
               ))}

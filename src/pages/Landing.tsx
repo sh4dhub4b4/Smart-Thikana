@@ -124,7 +124,7 @@ export default function Landing() {
       <section className="bg-gradient-hero text-primary-foreground">
         <div className="container py-16 text-center">
           <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">Ready to make a move?</h2>
-          <p className="opacity-90 max-w-lg mx-auto mb-6">Join thousands of tenants and landlords already using Bashabari.</p>
+          <p className="opacity-90 max-w-lg mx-auto mb-6">Join thousands of tenants and landlords already using Smart Thikana.</p>
           <div className="flex flex-wrap gap-3 justify-center">
             <Button size="lg" variant="secondary" onClick={() => goAs("tenant")}>Continue as Tenant</Button>
             <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground hover:text-primary"
