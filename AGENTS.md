@@ -10,9 +10,9 @@
 
 ## Progress
 ### Done
-- Created `public/_redirects` for SPA routing
+- Added `/* → /index.html` rewrite route to `render.yaml` for SPA routing (Render doesn't support `_redirects` files)
 - Created `render.yaml` with static site config
-- Removed `routes` from `render.yaml` (was blocking CSS/JS asset delivery)
+- Removed `routes` from `render.yaml` (was blocking CSS/JS asset delivery, later re-added correctly)
 - Removed `mobile` from root `package.json` workspace (blocked build with unresolvable `expo-local-authentication`)
 - Regenerated corrupted `src/integrations/supabase/types.ts` from live Supabase project
 - Fixed brand text in `Auth.tsx` (2 locations)
@@ -62,7 +62,7 @@
 
 ## Key Decisions
 - **Frontend-only on Render**: Using existing cloud Supabase instead of self-hosting backend, since `.env` already pointed to Supabase cloud
-- **`_redirects` over `render.yaml` routes**: `_redirects` only rewrites non-file paths; `render.yaml` routes with `/*` blocked CSS/JS assets
+- **`render.yaml` routes for SPA (not `_redirects`)**: Render does NOT support `_redirects` files (Netlify-only); the correct approach is `render.yaml` with `routes: [{ type: rewrite, source: /*, destination: /index.html }]`. Render's docs say rules don't apply when a file exists at that path, so existing assets are unaffected.
 - **New Supabase project**: Old project non-existent (deleted/paused). New project: `lhezrcwbijxuzsonxqqk`
 - **Email confirmation OFF**: Users sign in immediately without clicking confirmation link
 - **Schema gaps fixed systematically**: Rather than removing code that referenced non-existent DB objects, the correct fix was to add the missing tables/columns/enums to the SQL schema + create a migration + update types.ts
@@ -85,7 +85,7 @@
 - Build passes with zero errors (1823+ modules transformed, 0 warnings)
 
 ## Relevant Files
-- `public/_redirects`: SPA routing — `/* /index.html 200`
+- `public/_redirects`: SPA routing — `/* /index.html 200` (Render doesn't support this; kept for reference)
 - `render.yaml`: Static site config with env vars
 - `src/integrations/supabase/types.ts`: Updated with all missing table types + enums
 - `src/integrations/supabase/client.ts`: Env var validation at init
