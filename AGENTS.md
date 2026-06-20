@@ -52,6 +52,8 @@
 - **Schema & types migration**: Added `rent_invoices`, `kyc`, `ledger_entries`, `tax_transactions` tables + `invoice_status`, `entry_type`, `kyc_status` enums + `"active"` to `agreement_status` + `invoice_id`/`tax_deducted` columns on `payments` + RLS policies + realtime
 - Created new migration file: `supabase/migrations/20260620000000_add_missing_tables.sql`
 - Updated `src/integrations/supabase/types.ts` with all missing table types and enums
+- **BD location tables migration**: Created `supabase/migrations/20260620000001_add_bd_locations.sql` with `divisions`, `districts`, `thanas` tables + 8 divisions, 64 districts, 200+ thanas seeded + `city_corp`/`building_type` enums + address columns on `listings`
+- Updated `src/integrations/supabase/types.ts` with `divisions`, `districts`, `thanas` tables + `city_corp`/`building_type` enums + all 18 address columns on `listings`
 - Pushed all fixes to GitHub (Render auto-deploys)
 
 ### In Progress
@@ -119,6 +121,7 @@
 - `src/features/services/ServiceBookingFlow.tsx`: Pick<ServiceProvider> instead of local type
 - `backend/volumes/db/01-schema.sql`: Full DB schema — added rent_invoices, kyc, ledger_entries, tax_transactions, payment extensions, plan types
 - `supabase/migrations/20260620000000_add_missing_tables.sql`: Migration for all missing tables + enums + columns
+- `supabase/migrations/20260620000001_add_bd_locations.sql`: Migration for BD divisions/districts/thanas + listings address columns
 - **UI/UX Session (Jun 20)**:
   - **Navbar.tsx**: Added dark/light mode toggle with Moon/Sun icon; state persisted via `<html>` class toggle
   - **AppLayout.tsx**: Added `animate-fade-in` page transition; `key={location.pathname}` re-triggers animation per route
