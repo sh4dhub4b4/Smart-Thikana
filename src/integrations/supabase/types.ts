@@ -97,6 +97,53 @@ export type Database = {
           },
         ]
       }
+      districts: {
+        Row: {
+          division_id: number
+          id: number
+          name: string
+          name_bn: string | null
+        }
+        Insert: {
+          division_id: number
+          id?: number
+          name: string
+          name_bn?: string | null
+        }
+        Update: {
+          division_id?: number
+          id?: number
+          name?: string
+          name_bn?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "districts_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      divisions: {
+        Row: {
+          id: number
+          name: string
+          name_bn: string | null
+        }
+        Insert: {
+          id?: number
+          name: string
+          name_bn?: string | null
+        }
+        Update: {
+          id?: number
+          name?: string
+          name_bn?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -128,52 +175,106 @@ export type Database = {
       }
       listings: {
         Row: {
+          area_moholla: string | null
           area_sqft: number | null
+          avenue_lane: string | null
           bathrooms: number
           bedrooms: number
+          block_sector: string | null
+          building_type: Database["public"]["Enums"]["building_type"]
+          city_corporation: Database["public"]["Enums"]["city_corp"]
           created_at: string
           description: string
+          district: string | null
+          division: string | null
+          floor_unit: string | null
+          geo_location: string | null
+          holding_number: string | null
+          house_name: string | null
           id: string
           images: string[]
           is_active: boolean
+          landmarks: string | null
           landlord_id: string
+          latitude: number | null
           location: string
+          longitude: number | null
           price: number
           property_type: Database["public"]["Enums"]["property_type"]
+          road_no: string | null
+          thana: string | null
           title: string
           updated_at: string
+          ward_number: number | null
+          zone: string | null
         }
         Insert: {
+          area_moholla?: string | null
           area_sqft?: number | null
+          avenue_lane?: string | null
           bathrooms?: number
           bedrooms?: number
+          block_sector?: string | null
+          building_type?: Database["public"]["Enums"]["building_type"]
+          city_corporation?: Database["public"]["Enums"]["city_corp"]
           created_at?: string
           description?: string
+          district?: string | null
+          division?: string | null
+          floor_unit?: string | null
+          geo_location?: string | null
+          holding_number?: string | null
+          house_name?: string | null
           id?: string
           images?: string[]
           is_active?: boolean
+          landmarks?: string | null
           landlord_id: string
+          latitude?: number | null
           location: string
+          longitude?: number | null
           price: number
           property_type?: Database["public"]["Enums"]["property_type"]
+          road_no?: string | null
+          thana?: string | null
           title: string
           updated_at?: string
+          ward_number?: number | null
+          zone?: string | null
         }
         Update: {
+          area_moholla?: string | null
           area_sqft?: number | null
+          avenue_lane?: string | null
           bathrooms?: number
           bedrooms?: number
+          block_sector?: string | null
+          building_type?: Database["public"]["Enums"]["building_type"]
+          city_corporation?: Database["public"]["Enums"]["city_corp"]
           created_at?: string
           description?: string
+          district?: string | null
+          division?: string | null
+          floor_unit?: string | null
+          geo_location?: string | null
+          holding_number?: string | null
+          house_name?: string | null
           id?: string
           images?: string[]
           is_active?: boolean
+          landmarks?: string | null
           landlord_id?: string
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           price?: number
           property_type?: Database["public"]["Enums"]["property_type"]
+          road_no?: string | null
+          thana?: string | null
           title?: string
           updated_at?: string
+          ward_number?: number | null
+          zone?: string | null
         }
         Relationships: []
       }
@@ -510,6 +611,35 @@ export type Database = {
         }
         Relationships: []
       }
+      thanas: {
+        Row: {
+          district_id: number
+          id: number
+          name: string
+          name_bn: string | null
+        }
+        Insert: {
+          district_id: number
+          id?: number
+          name: string
+          name_bn?: string | null
+        }
+        Update: {
+          district_id?: number
+          id?: number
+          name?: string
+          name_bn?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thanas_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -526,6 +656,8 @@ export type Database = {
     Enums: {
       agreement_status: "pending" | "accepted" | "rejected" | "active"
       app_role: "tenant" | "landlord"
+      building_type: "commercial_studio" | "residential_flat" | "standalone_house" | "sublet_mess"
+      city_corp: "DNCC" | "DSCC" | "none"
       entry_type: "debit" | "credit"
       invoice_status: "paid" | "unpaid"
       kyc_status: "pending" | "verified" | "rejected"
@@ -660,6 +792,8 @@ export const Constants = {
     Enums: {
       agreement_status: ["pending", "accepted", "rejected", "active"],
       app_role: ["tenant", "landlord"],
+      building_type: ["commercial_studio", "residential_flat", "standalone_house", "sublet_mess"],
+      city_corp: ["DNCC", "DSCC", "none"],
       entry_type: ["debit", "credit"],
       invoice_status: ["paid", "unpaid"],
       kyc_status: ["pending", "verified", "rejected"],
