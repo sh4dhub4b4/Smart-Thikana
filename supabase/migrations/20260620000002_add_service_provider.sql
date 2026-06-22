@@ -67,11 +67,12 @@ CREATE POLICY "Users can update own provider profile"
   FOR UPDATE
   USING (auth.uid() = user_id);
 
--- Anyone can read approved/verified providers
-CREATE POLICY "Anyone can read approved providers"
+-- Anyone can read all providers (marketplace visibility)
+DROP POLICY IF EXISTS "Anyone can read approved providers" ON public.service_providers;
+CREATE POLICY "Anyone can read service providers"
   ON public.service_providers
   FOR SELECT
-  USING (is_approved = true AND is_verified = true);
+  USING (true);
 
 -- =========================================================================
 -- 4. Seed common service categories

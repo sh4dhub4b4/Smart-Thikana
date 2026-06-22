@@ -101,14 +101,7 @@ export default function ProviderDashboard() {
       </Card>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <Link to="/services">
-          <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer h-full">
-            <Wrench className="h-8 w-8 text-primary mb-3" />
-            <h3 className="font-semibold">Browse Services</h3>
-            <p className="text-sm text-muted-foreground">View available service requests</p>
-          </Card>
-        </Link>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <Link to="/messages">
           <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer h-full">
             <MessageSquare className="h-8 w-8 text-primary mb-3" />
