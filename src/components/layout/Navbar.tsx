@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Building2, LogOut, MessageSquare, Heart, LayoutDashboard, User, ShieldCheck, Star, History, Search, Menu, Moon, Sun } from "lucide-react";
+import { Building2, LogOut, MessageSquare, Heart, LayoutDashboard, User, ShieldCheck, Star, History, Search, Menu, Moon, Sun, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -41,6 +41,7 @@ export default function Navbar() {
     { to: "/tenant", label: "Browse", icon: Building2 },
     { to: "/favorites", label: "Saved", icon: Heart },
     { to: "/messages", label: "Messages", icon: MessageSquare, badge: unread },
+    { to: "/bookings", label: "My Bookings", icon: Calendar },
     { to: "/services", label: "Services", icon: ShieldCheck },
     { to: "/history", label: "History", icon: History },
     { to: "/feedback", label: "Feedback", icon: Star },
@@ -49,11 +50,17 @@ export default function Navbar() {
     { to: "/landlord", label: "Dashboard", icon: LayoutDashboard },
     { to: "/landlord/listings", label: "My Listings", icon: Building2 },
     { to: "/messages", label: "Messages", icon: MessageSquare, badge: unread },
+    { to: "/bookings", label: "My Bookings", icon: Calendar },
     { to: "/services", label: "Services", icon: ShieldCheck },
     { to: "/tenant-lookup", label: "Tenant lookup", icon: Search },
     { to: "/feedback", label: "Feedback", icon: Star },
   ];
-  const links = role === "landlord" ? landlordLinks : role === "tenant" ? tenantLinks : [];
+  const providerLinks = [
+    { to: "/provider", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/messages", label: "Messages", icon: MessageSquare, badge: unread },
+    { to: "/services", label: "Services", icon: ShieldCheck },
+  ];
+  const links = role === "landlord" ? landlordLinks : role === "tenant" ? tenantLinks : role === "service_provider" ? providerLinks : [];
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur border-b">

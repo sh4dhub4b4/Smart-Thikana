@@ -191,6 +191,15 @@ export default function Messages() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{peer?.full_name || "User"}</p>
                     <p className="text-xs text-muted-foreground truncate">{c.listing?.title ?? "Listing"}</p>
+                    {peer?.phone && (
+                      <a
+                        href={`tel:${peer.phone}`}
+                        className="text-[11px] text-primary hover:underline flex items-center gap-1 mt-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Phone className="h-3 w-3" /> {peer.phone}
+                      </a>
+                    )}
                   </div>
                 </button>
               );
@@ -214,7 +223,7 @@ export default function Messages() {
                     <AvatarImage src={other?.avatar_url ?? undefined} />
                     <AvatarFallback>{other?.full_name?.[0] ?? "?"}</AvatarFallback>
                   </Avatar>
-                  <div className="min-w-0">
+                    <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       {/* FULL PROFILE ACCESS FOR LANDLORDS */}
                       {role === "landlord" && other ? (
@@ -233,6 +242,14 @@ export default function Messages() {
                         {role === "tenant" ? "Landlord" : "Tenant"}
                       </Badge>
                     </div>
+                    {other?.phone && (
+                      <a
+                        href={`tel:${other.phone}`}
+                        className="text-xs text-muted-foreground hover:text-primary hover:underline flex items-center gap-1 mt-0.5"
+                      >
+                        <Phone className="h-3 w-3" /> {other.phone}
+                      </a>
+                    )}
                     <p className="text-xs text-muted-foreground truncate font-medium">{active.listing?.title}</p>
                   </div>
                 </div>
