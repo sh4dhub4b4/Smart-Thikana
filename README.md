@@ -55,7 +55,7 @@ feedback and an automatically-generated rental history.
 ---
 
 ## 2. Routes
-
+```code
 | Path | Access | Purpose |
 |------|--------|---------|
 
@@ -78,11 +78,11 @@ feedback and an automatically-generated rental history.
 | `/history` | tenant | Own rental history |
 | `/history/:userId` | landlord | View any tenant's history (lookup) |
 | `/tenant-lookup` | landlord | Paste a tenant User ID to look them up |
-
+```
 ---
 
 ## 3. Database schema
-
+```code
 | Table | Purpose | RLS summary |
 |-------|---------|-------------|
 
@@ -96,7 +96,7 @@ feedback and an automatically-generated rental history.
 | `agreements` | Deal status: `pending` / `accepted` / `rejected` | Participants read; tenant insert; landlord update |
 | `payments` | Simulated payments with unique receipt # | Participants only |
 | `kyc` | NID numbers + Storage URLs | Own rows only |
-| `feedback` | Peer reviews | Author reads own; **same-role peers** read others |
+| `feedback` | Peer reviews | Author reads own; **same-role peers** read others |```
 
 ### Key SQL helpers
 
