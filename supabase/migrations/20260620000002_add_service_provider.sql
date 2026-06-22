@@ -48,6 +48,9 @@ CREATE TABLE IF NOT EXISTS public.service_providers (
 
 ALTER TABLE public.service_providers ENABLE ROW LEVEL SECURITY;
 
+-- Add division column if the table already exists from a partial run
+ALTER TABLE public.service_providers ADD COLUMN IF NOT EXISTS division TEXT;
+
 -- Owners can read/write their own profile
 CREATE POLICY "Users can read own provider profile"
   ON public.service_providers
