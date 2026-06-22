@@ -70,21 +70,27 @@ export type Database = {
           created_at: string
           id: string
           landlord_id: string
-          listing_id: string
+          listing_id: string | null
+          provider_id: string | null
+          service_booking_id: string | null
           tenant_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           landlord_id: string
-          listing_id: string
+          listing_id?: string | null
+          provider_id?: string | null
+          service_booking_id?: string | null
           tenant_id: string
         }
         Update: {
           created_at?: string
           id?: string
           landlord_id?: string
-          listing_id?: string
+          listing_id?: string | null
+          provider_id?: string | null
+          service_booking_id?: string | null
           tenant_id?: string
         }
         Relationships: [
@@ -93,6 +99,20 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_service_booking_id_fkey"
+            columns: ["service_booking_id"]
+            isOneToOne: false
+            referencedRelation: "service_bookings"
             referencedColumns: ["id"]
           },
         ]
