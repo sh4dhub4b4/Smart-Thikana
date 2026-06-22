@@ -1,8 +1,3 @@
-/**
- * ServiceProviderSignUp — service provider onboarding flow.
- * Captures provider details: company name, phone, service category, hourly rate, service area.
- * Creates a record in service_providers table linked to the user.
- */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -15,13 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchDivisions, fetchDistricts, fetchThanas } from "@/lib/bd-locations";
+import type { Division, District, Thana } from "@/lib/bd-locations";
 
-// ─── Validation Schemas ────────────────────────────────────────────────────
 const companyNameSchema = z.string().trim().min(2, "Company name required").max(100);
-const phoneSchema = z.string().trim().regex(/^\+?88?01[3-9]\d{8}$/, "Invalid Bangladeshi phone");
-const hourlyRateSchema = z.number().int().min(100, "Min ৳100/hr").max(100000, "Max ৳100,000/hr");
-const thanaSchema = z.string().trim().min(2, "Thana required").max(100);
-const districtSchema = z.string().trim().min(2, "District required").max(100);
+const phoneSchema = z.string().trim().regex(/^(\+?88)?01[3-9]\d{8}$/, "Invalid Bangladeshi phone");
 
 interface ServiceCategory {
   id: string;
@@ -33,8 +26,7 @@ export default function ServiceProviderSignUp() {
   const navigate = useNavigate();
   const { user, role } = useAuth();
 
-  // ── State ──────────────────────────────────────────────────────────────
-  const [step, setStep] = useState(1); // 1: Basic, 2: Location, 3: Review
+  const [step, setStep] = useState(1);
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -42,20 +34,20 @@ export default function ServiceProviderSignUp() {
   const [companyName, setCompanyName] = useState("");
   const [phone, setPhone] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [hourlyRate, setHourlyRate] = useState("");
-  const [thana, setThana] = useState("");
-  const [district, setDistrict] = useState("");
 
-  // ── Redirect guards ────────────────────────────────────────────────────
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [thanas, setThanas] = useState<Thana[]>([]);
+  const [division, setDivision] = useState("");
+  const [district, setDistrict] = useState("");
+  const [thana, setThana] = useState("");
+
   useEffect(() => {
-    // Only service_provider role can access this page
     if (role && role !== "service_provider") {
       navigate("/onboarding", { replace: true });
-      return;
     }
   }, [role, navigate]);
 
-  // ── Load service categories ────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
@@ -77,13 +69,27 @@ export default function ServiceProviderSignUp() {
     })();
   }, []);
 
-  // ── Validation helpers ────────────────────────────────────────────────
+  useEffect(() => { fetchDivisions().then(setDivisions); }, []);
+
+  useEffect(() => {
+    setDistricts([]);
+    setDistrict("");
+    setThanas([]);
+    setThana("");
+    if (division) fetchDistricts(division).then(setDistricts);
+  }, [division]);
+
+  useEffect(() => {
+    setThanas([]);
+    setThana("");
+    if (division && district) fetchThanas(division, district).then(setThanas);
+  }, [division, district]);
+
   const validateStep1 = (): boolean => {
     try {
       companyNameSchema.parse(companyName);
       phoneSchema.parse(phone);
       if (!categoryId) { toast.error("Select a service category"); return false; }
-      hourlyRateSchema.parse(parseInt(hourlyRate) || 0);
       return true;
     } catch (err: any) {
       toast.error(err.message ?? "Validation error");
@@ -92,17 +98,12 @@ export default function ServiceProviderSignUp() {
   };
 
   const validateStep2 = (): boolean => {
-    try {
-      thanaSchema.parse(thana);
-      districtSchema.parse(district);
-      return true;
-    } catch (err: any) {
-      toast.error(err.message ?? "Validation error");
-      return false;
-    }
+    if (!division) { toast.error("Select a division"); return false; }
+    if (!district) { toast.error("Select a district"); return false; }
+    if (!thana) { toast.error("Select a thana"); return false; }
+    return true;
   };
 
-  // ── Handlers ───────────────────────────────────────────────────────────
   const handleNextStep = async () => {
     if (step === 1 && validateStep1()) setStep(2);
     else if (step === 2 && validateStep2()) setStep(3);
@@ -120,13 +121,12 @@ export default function ServiceProviderSignUp() {
 
     setSubmitting(true);
     try {
-      // Insert service provider record
       const { error } = await supabase.from("service_providers").insert({
         user_id: user.id,
         category_id: categoryId,
         company_name: companyName,
         phone,
-        hourly_rate: parseInt(hourlyRate) || 0,
+        division,
         thana,
         district,
         is_verified: false,
@@ -152,14 +152,10 @@ export default function ServiceProviderSignUp() {
   return (
     <div className="min-h-[calc(100vh-4rem)] grid place-items-center px-4 py-10 bg-gradient-soft">
       <div className="w-full max-w-xl animate-fade-in-up">
-        {/* Progress indicator */}
         <div className="flex gap-2 mb-6">
           {[1, 2, 3].map((s) => (
-            <div
-              key={s}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                s <= step ? "bg-primary" : "bg-muted"
-              }`}
+            <div key={s}
+              className={`h-1 flex-1 rounded-full transition-colors ${s <= step ? "bg-primary" : "bg-muted"}`}
             />
           ))}
         </div>
@@ -175,23 +171,12 @@ export default function ServiceProviderSignUp() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="company">Company/Shop Name</Label>
-                  <Input
-                    id="company"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="e.g., Ali's Plumbing Services"
-                  />
+                  <Input id="company" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g., Ali's Plumbing Services" />
                 </div>
 
                 <div>
                   <Label htmlFor="phone">Phone Number (Bangladesh)</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+8801XXXXXXXXX or 01XXXXXXXXX"
-                  />
+                  <Input id="phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+8801XXXXXXXXX or 01XXXXXXXXX" />
                 </div>
 
                 <div>
@@ -206,25 +191,12 @@ export default function ServiceProviderSignUp() {
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
+                        {categories.map(cat => (
+                          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   )}
-                </div>
-
-                <div>
-                  <Label htmlFor="rate">Hourly Rate (৳)</Label>
-                  <Input
-                    id="rate"
-                    type="number"
-                    value={hourlyRate}
-                    onChange={(e) => setHourlyRate(e.target.value)}
-                    placeholder="e.g., 500"
-                  />
                 </div>
               </div>
             </>
@@ -239,23 +211,33 @@ export default function ServiceProviderSignUp() {
 
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="thana">Thana/Zone</Label>
-                  <Input
-                    id="thana"
-                    value={thana}
-                    onChange={(e) => setThana(e.target.value)}
-                    placeholder="e.g., Dhanmondi"
-                  />
+                  <Label>Division</Label>
+                  <Select value={division} onValueChange={v => { setDivision(v); setDistrict(""); setThana(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Select division" /></SelectTrigger>
+                    <SelectContent>
+                      {divisions.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="district">District</Label>
-                  <Input
-                    id="district"
-                    value={district}
-                    onChange={(e) => setDistrict(e.target.value)}
-                    placeholder="e.g., Dhaka"
-                  />
+                  <Label>District</Label>
+                  <Select value={district} onValueChange={v => { setDistrict(v); setThana(""); }} disabled={!division}>
+                    <SelectTrigger><SelectValue placeholder={division ? "Select district" : "Pick division first"} /></SelectTrigger>
+                    <SelectContent>
+                      {districts.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Thana / PS</Label>
+                  <Select value={thana} onValueChange={setThana} disabled={!district}>
+                    <SelectTrigger><SelectValue placeholder={district ? "Select thana" : "Pick district first"} /></SelectTrigger>
+                    <SelectContent>
+                      {thanas.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800">
@@ -285,16 +267,12 @@ export default function ServiceProviderSignUp() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Service:</span>
                     <span className="font-medium">
-                      {categories.find((c) => c.id === categoryId)?.name || "Loading..."}
+                      {categories.find(c => c.id === categoryId)?.name || "Loading..."}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Rate:</span>
-                    <span className="font-medium">৳{hourlyRate}/hr</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Location:</span>
-                    <span className="font-medium">{thana}, {district}</span>
+                    <span className="font-medium">{thana}, {district}, {division}</span>
                   </div>
                 </div>
 
@@ -305,12 +283,9 @@ export default function ServiceProviderSignUp() {
             </>
           )}
 
-          {/* Action buttons */}
           <div className="flex gap-3 mt-8">
             {step > 1 && (
-              <Button variant="outline" onClick={handlePrevStep} disabled={submitting} className="flex-1">
-                Back
-              </Button>
+              <Button variant="outline" onClick={handlePrevStep} disabled={submitting} className="flex-1">Back</Button>
             )}
             {step < 3 ? (
               <Button onClick={handleNextStep} disabled={submitting} className="flex-1 gap-2">

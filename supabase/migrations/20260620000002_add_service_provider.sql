@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS public.service_providers (
   phone TEXT,
   hourly_rate INTEGER NOT NULL DEFAULT 0,
   experience_years INTEGER NOT NULL DEFAULT 0,
+  division TEXT,
   thana TEXT,
   district TEXT,
   is_verified BOOLEAN NOT NULL DEFAULT false,

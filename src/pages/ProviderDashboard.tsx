@@ -96,7 +96,6 @@ export default function ProviderDashboard() {
               {profile.service_categories?.name || "General Services"}
               {profile.thana && profile.district && ` \u2022 ${profile.thana}, ${profile.district}`}
             </p>
-            <p className="text-sm font-medium mt-1">Rate: ৳{profile.hourly_rate}/hr</p>
           </div>
         </div>
       </Card>

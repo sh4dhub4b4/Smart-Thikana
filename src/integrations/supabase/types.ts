@@ -667,6 +667,7 @@ export type Database = {
           company_name: string | null
           created_at: string
           district: string | null
+          division: string | null
           hourly_rate: number
           id: string
           is_approved: boolean
@@ -681,6 +682,7 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           district?: string | null
+          division?: string | null
           hourly_rate?: number
           id?: string
           is_approved?: boolean
@@ -695,6 +697,7 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           district?: string | null
+          division?: string | null
           hourly_rate?: number
           id?: string
           is_approved?: boolean
