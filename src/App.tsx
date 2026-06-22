@@ -28,6 +28,8 @@ import Kyc from "./pages/Kyc";
 import Feedback from "./pages/Feedback";
 import RentalHistory from "./pages/RentalHistory";
 import TenantLookup from "./pages/TenantLookup";
+import ProviderDashboard from "./pages/ProviderDashboard";
+import ServiceProviderSignUp from "./pages/ServiceProviderSignUp";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +65,8 @@ const App = () => (
               <Route path="/history/:userId" element={<ProtectedRoute requireRole="landlord"><RentalHistory /></ProtectedRoute>} />
               <Route path="/tenant-lookup" element={<ProtectedRoute requireRole="landlord"><TenantLookup /></ProtectedRoute>} />
               <Route path="/tenant/life-cycle" element={<ProtectedRoute requireRole="tenant"><TenantLifeCycle /></ProtectedRoute>} />
+              <Route path="/provider/signup" element={<ProtectedRoute requireRole="service_provider"><ServiceProviderSignUp /></ProtectedRoute>} />
+              <Route path="/provider" element={<ProtectedRoute requireRole="service_provider"><ProviderDashboard /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

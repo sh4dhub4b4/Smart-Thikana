@@ -640,6 +640,87 @@ export type Database = {
           },
         ]
       }
+      service_categories: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      service_providers: {
+        Row: {
+          category_id: string | null
+          company_name: string | null
+          created_at: string
+          district: string | null
+          hourly_rate: number
+          id: string
+          is_approved: boolean
+          is_verified: boolean
+          phone: string | null
+          thana: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          district?: string | null
+          hourly_rate?: number
+          id?: string
+          is_approved?: boolean
+          is_verified?: boolean
+          phone?: string | null
+          thana?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string | null
+          company_name?: string | null
+          created_at?: string
+          district?: string | null
+          hourly_rate?: number
+          id?: string
+          is_approved?: boolean
+          is_verified?: boolean
+          phone?: string | null
+          thana?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_providers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "service_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_providers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -655,7 +736,7 @@ export type Database = {
     }
     Enums: {
       agreement_status: "pending" | "accepted" | "rejected" | "active"
-      app_role: "tenant" | "landlord"
+      app_role: "landlord" | "service_provider" | "tenant"
       building_type: "commercial_studio" | "residential_flat" | "standalone_house" | "sublet_mess"
       city_corp: "DNCC" | "DSCC" | "none"
       entry_type: "debit" | "credit"
@@ -791,7 +872,7 @@ export const Constants = {
   public: {
     Enums: {
       agreement_status: ["pending", "accepted", "rejected", "active"],
-      app_role: ["tenant", "landlord"],
+      app_role: ["landlord", "service_provider", "tenant"],
       building_type: ["commercial_studio", "residential_flat", "standalone_house", "sublet_mess"],
       city_corp: ["DNCC", "DSCC", "none"],
       entry_type: ["debit", "credit"],

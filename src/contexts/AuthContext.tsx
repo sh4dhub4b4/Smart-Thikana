@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Fires on SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, USER_UPDATED, etc.
     const timers: ReturnType<typeof setTimeout>[] = [];
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
+    const { data: { subscription: sub } } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
 
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setRole(null);
       }
-    }).catch(console.error);
+    });
 
     // ── Step 2: THEN check for an existing session ────────────────────────
     // Handles the page-refresh case where the user is already signed in.
@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Cleanup: unsubscribe on unmount to prevent memory leaks.
     return () => {
       timers.forEach(clearTimeout);
-      sub?.subscription.unsubscribe();
+      sub?.unsubscribe();
     };
   }, []);
 

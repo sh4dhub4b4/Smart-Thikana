@@ -55,7 +55,7 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
 
   // ── Wrong role → bounce to the correct dashboard for their role ─────────
   if (requireRole && role && role !== requireRole) {
-    return <Navigate to={role === "landlord" ? "/landlord" : "/tenant"} replace />;
+    return <Navigate to={role === "landlord" ? "/landlord" : role === "service_provider" ? "/provider" : "/tenant"} replace />;
   }
 
   // All checks passed → render the protected page

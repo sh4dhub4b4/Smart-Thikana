@@ -10,7 +10,7 @@
  */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Home, Loader2 } from "lucide-react";
+import { Building2, Home, Loader2, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
@@ -23,11 +23,11 @@ export default function Onboarding() {
   const [saving, setSaving] = useState(false);
   const [picked, setPicked] = useState<AppRole>(() => {
     const stored = localStorage.getItem("smartthikana:intendedRole");
-    return stored === "tenant" || stored === "landlord" ? stored : "tenant";
+    return stored === "tenant" || stored === "landlord" || stored === "service_provider" ? stored : "tenant";
   });
 
   useEffect(() => {
-    if (role) navigate(role === "landlord" ? "/landlord" : "/tenant", { replace: true });
+    if (role) navigate(role === "landlord" ? "/landlord" : role === "service_provider" ? "/provider" : "/tenant", { replace: true });
   }, [role, navigate]);
 
   const choose = async () => {
@@ -40,7 +40,7 @@ export default function Onboarding() {
       }
       localStorage.removeItem("smartthikana:intendedRole");
       await refreshProfile();
-      navigate(picked === "landlord" ? "/landlord" : "/tenant", { replace: true });
+      navigate(picked === "landlord" ? "/landlord" : picked === "service_provider" ? "/provider" : "/tenant", { replace: true });
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to save role");
     } finally {
@@ -53,7 +53,7 @@ export default function Onboarding() {
       <Card className="w-full max-w-lg p-8 animate-fade-in-up">
         <h1 className="font-display text-2xl font-bold text-center">Choose your role</h1>
         <p className="text-sm text-muted-foreground text-center mt-1">You can change this later in settings.</p>
-        <div className="grid grid-cols-2 gap-3 my-6">
+        <div className="grid grid-cols-3 gap-3 my-6">
           <button onClick={() => setPicked("tenant")}
             className={`p-5 rounded-md border-2 text-left transition-all ${picked === "tenant" ? "border-primary bg-primary-soft" : "border-border"}`}>
             <Home className="h-6 w-6 text-primary mb-2" />
@@ -65,6 +65,12 @@ export default function Onboarding() {
             <Building2 className="h-6 w-6 text-accent mb-2" />
             <div className="font-semibold">Landlord</div>
             <div className="text-xs text-muted-foreground">List your properties</div>
+          </button>
+          <button onClick={() => setPicked("service_provider")}
+            className={`p-5 rounded-md border-2 text-left transition-all ${picked === "service_provider" ? "border-blue-600 bg-blue-50 text-blue-600" : "border-border hover:bg-muted"}`}>
+            <Wrench className="h-6 w-6 text-blue-500 mb-2" />
+            <div className="font-semibold">Provider</div>
+            <div className="text-xs text-muted-foreground">Offer your services</div>
           </button>
         </div>
         <Button className="w-full" onClick={choose} disabled={saving}>
