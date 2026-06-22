@@ -1,11 +1,12 @@
 /**
  * Auth — combined sign in / sign up with email + Google.
  * Captures the chosen role at signup and writes it into user_roles.
+ * Now supports tenant, landlord, AND service_provider roles.
  */
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Building2, Home, Loader2 } from "lucide-react";
+import { Building2, Home, Wrench, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,10 @@ export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const rawIntended = (location.state as any)?.intendedRole;
-  const intendedRole: AppRole = rawIntended === "tenant" || rawIntended === "landlord" ? rawIntended : "tenant";
+  const intendedRole: AppRole = 
+    rawIntended === "tenant" || rawIntended === "landlord" || rawIntended === "service_provider" 
+      ? rawIntended 
+      : "tenant";
 
   const { user, role, loading: authLoading } = useAuth();
   const [tab, setTab] = useState<"signin" | "signup">("signup");
@@ -38,7 +42,11 @@ export default function Auth() {
     if (!authLoading && user) {
       const from = (location.state as any)?.from?.pathname;
       if (from) { navigate(from, { replace: true }); return; }
-      if (role) navigate(role === "landlord" ? "/landlord" : "/tenant", { replace: true });
+      if (role) {
+        if (role === "landlord") navigate("/landlord", { replace: true });
+        else if (role === "service_provider") navigate("/provider", { replace: true });
+        else navigate("/tenant", { replace: true });
+      }
       else navigate("/onboarding", { replace: true });
     }
   }, [user, role, authLoading, navigate, location.state]);
@@ -74,7 +82,7 @@ export default function Auth() {
         const { error: profileError } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", data.user.id);
         if (profileError) console.error("Profile update failed:", profileError);
         toast.success("Welcome to Smart Thikana!");
-        navigate(selectedRole === "landlord" ? "/landlord" : "/tenant", { replace: true });
+        navigate(selectedRole === "landlord" ? "/landlord" : selectedRole === "service_provider" ? "/provider" : "/tenant", { replace: true });
       }
     } catch (err: any) {
       toast.error(err?.message ?? "Sign up failed");
@@ -113,19 +121,25 @@ export default function Auth() {
             <p className="text-sm text-muted-foreground">Sign in or create an account to continue</p>
           </div>
 
-          {/* Role pick */}
-          <div className="grid grid-cols-2 gap-2 mb-6">
+          {/* Role picker: 3-way button group */}
+          <div className="grid grid-cols-3 gap-2 mb-6">
             <button type="button" onClick={() => setSelectedRole("tenant")}
-              className={`flex items-center gap-2 rounded-md border-2 p-3 text-sm transition-all ${
+              className={`flex flex-col items-center gap-1 rounded-md border-2 p-2 text-xs transition-all ${
                 selectedRole === "tenant" ? "border-primary bg-primary-soft text-primary" : "border-border hover:bg-muted"
               }`}>
               <Home className="h-4 w-4" /> Tenant
             </button>
             <button type="button" onClick={() => setSelectedRole("landlord")}
-              className={`flex items-center gap-2 rounded-md border-2 p-3 text-sm transition-all ${
+              className={`flex flex-col items-center gap-1 rounded-md border-2 p-2 text-xs transition-all ${
                 selectedRole === "landlord" ? "border-accent bg-accent-soft text-accent" : "border-border hover:bg-muted"
               }`}>
               <Building2 className="h-4 w-4" /> Landlord
+            </button>
+            <button type="button" onClick={() => setSelectedRole("service_provider")}
+              className={`flex flex-col items-center gap-1 rounded-md border-2 p-2 text-xs transition-all ${
+                selectedRole === "service_provider" ? "border-blue-600 bg-blue-50 text-blue-600" : "border-border hover:bg-muted"
+              }`}>
+              <Wrench className="h-4 w-4" /> Provider
             </button>
           </div>
 
