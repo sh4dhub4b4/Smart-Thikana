@@ -20,10 +20,12 @@ import { toast } from "sonner";
 interface PeerInfo { id: string; full_name: string; avatar_url: string | null; phone: string | null }
 interface ListingInfo { id: string; title: string; price: number; images: string[] }
 interface ConvRow {
-  id: string; listing_id: string; tenant_id: string; landlord_id: string; created_at: string;
+  id: string; listing_id: string | null; tenant_id: string; landlord_id: string;
+  provider_id: string | null; service_booking_id: string | null; created_at: string;
   listing: ListingInfo | null;
   tenant: PeerInfo | null;
   landlord: PeerInfo | null;
+  provider: PeerInfo | null;
 }
 interface MsgRow { id: string; conversation_id: string; sender_id: string; content: string; created_at: string }
 interface AgreementRow {
@@ -47,7 +49,17 @@ export default function Messages() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const active = conversations.find(c => c.id === activeId) || null;
-  const other = active ? (role === "tenant" ? active.landlord : active.tenant) : null;
+  const isServiceConv = active?.provider_id != null;
+  const other = active
+    ? role === "tenant"
+      ? (active.provider ?? active.landlord)
+      : active.tenant
+    : null;
+  const peerRoleLabel = active
+    ? role === "tenant"
+      ? isServiceConv ? "Service Provider" : "Landlord"
+      : "Tenant"
+    : "";
 
   useEffect(() => { clearUnread(); }, [clearUnread, activeId]);
 
@@ -60,8 +72,8 @@ export default function Messages() {
       try {
         const { data: convs, error } = await supabase
           .from("conversations")
-          .select("id, listing_id, tenant_id, landlord_id, created_at")
-          .or(`tenant_id.eq.${user.id},landlord_id.eq.${user.id}`)
+          .select("id, listing_id, tenant_id, landlord_id, provider_id, service_booking_id, created_at")
+          .or(`tenant_id.eq.${user.id},landlord_id.eq.${user.id},provider_id.eq.${user.id}`)
           .order("created_at", { ascending: false })
           .limit(50);
         
@@ -69,8 +81,8 @@ export default function Messages() {
         const rows = (convs ?? []) as any[];
         if (rows.length === 0) { setConversations([]); setLoadingConvs(false); return; }
 
-        const listingIds = [...new Set(rows.map(r => r.listing_id))];
-        const profileIds = [...new Set(rows.flatMap(r => [r.tenant_id, r.landlord_id]))];
+        const listingIds = [...new Set(rows.map(r => r.listing_id).filter(Boolean))];
+        const profileIds = [...new Set(rows.flatMap(r => [r.tenant_id, r.landlord_id, r.provider_id].filter(Boolean)))];
 
         const [{ data: listings }, { data: profiles }] = await Promise.all([
           supabase.from("listings").select("id, title, price, images").in("id", listingIds),
@@ -83,9 +95,10 @@ export default function Messages() {
 
         setConversations(rows.map(r => ({
           ...r,
-          listing: listingMap.get(r.listing_id) ?? null,
+          listing: r.listing_id ? (listingMap.get(r.listing_id) ?? null) : null,
           tenant: profileMap.get(r.tenant_id) ?? null,
           landlord: profileMap.get(r.landlord_id) ?? null,
+          provider: r.provider_id ? (profileMap.get(r.provider_id) ?? null) : null,
         })));
       } catch (err) {
         if (!cancelled) console.error("Failed to load conversations:", err);
@@ -141,9 +154,10 @@ export default function Messages() {
     }
   };
 
-  // Fixed callPeer function (Fixes error 2304)
   const callPeer = () => {
-    const phone = role === "tenant" ? active?.landlord?.phone : active?.tenant?.phone;
+    const phone = role === "tenant"
+      ? (active?.provider?.phone ?? active?.landlord?.phone)
+      : active?.tenant?.phone;
     if (!phone) { toast.info("Phone number not provided"); return; }
     window.location.href = `tel:${phone}`;
   };
@@ -190,7 +204,9 @@ export default function Messages() {
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{peer?.full_name || "User"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{c.listing?.title ?? "Listing"}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {c.listing?.title ?? (c.provider_id ? "Service Booking" : "Conversation")}
+                    </p>
                     {peer?.phone && (
                       <a
                         href={`tel:${peer.phone}`}
@@ -239,7 +255,7 @@ export default function Messages() {
                         <p className="font-bold text-sm truncate">{other?.full_name || "Unknown user"}</p>
                       )}
                       <Badge variant="outline" className="text-[9px] uppercase h-5">
-                        {role === "tenant" ? "Landlord" : "Tenant"}
+                        {peerRoleLabel}
                       </Badge>
                     </div>
                     {other?.phone && (
@@ -250,7 +266,9 @@ export default function Messages() {
                         <Phone className="h-3 w-3" /> {other.phone}
                       </a>
                     )}
-                    <p className="text-xs text-muted-foreground truncate font-medium">{active.listing?.title}</p>
+                    <p className="text-xs text-muted-foreground truncate font-medium">
+                      {active.listing?.title ?? (isServiceConv ? "Service Booking" : "")}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
