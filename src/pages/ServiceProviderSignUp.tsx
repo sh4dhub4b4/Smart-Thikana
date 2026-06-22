@@ -129,8 +129,8 @@ export default function ServiceProviderSignUp() {
         division,
         thana,
         district,
-        is_verified: false,
-        is_approved: false,
+        is_verified: true,
+        is_approved: true,
       });
 
       if (error) {
