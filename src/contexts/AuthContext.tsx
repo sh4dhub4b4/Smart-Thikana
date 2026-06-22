@@ -26,10 +26,10 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-// `app_role` enum in the database has exactly two values. Mirroring it as a
+// ─── Types ───────────────────────────────────────────────────────────
+// `app_role` enum in the database has three values. Mirroring it as a
 // TypeScript union gives us autocomplete + compile-time safety.
-export type AppRole = "tenant" | "landlord";
+export type AppRole = "tenant" | "landlord" | "service_provider";
 
 /** Shape of a row in the public.profiles table. */
 export interface Profile {
@@ -47,7 +47,7 @@ interface AuthContextValue {
   session: Session | null;        // Supabase session object (contains JWT)
   user: User | null;              // Convenience: session?.user
   profile: Profile | null;        // Row from public.profiles, or null
-  role: AppRole | null;           // 'tenant' | 'landlord' | null (not chosen yet)
+  role: AppRole | null;           // 'tenant' | 'landlord' | 'service_provider' | null (not chosen yet)
   loading: boolean;               // True until the FIRST auth check completes
   refreshProfile: () => Promise<void>; // Re-fetch profile + role on demand
   signOut: () => Promise<void>;
@@ -55,7 +55,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// ─── Provider ────────────────────────────────────────────────────────────────
+// ─── Provider ──────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser]       = useState<User | null>(null);
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setRole(null);
       }
-    });
+    }).catch(console.error);
 
     // ── Step 2: THEN check for an existing session ────────────────────────
     // Handles the page-refresh case where the user is already signed in.
@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Cleanup: unsubscribe on unmount to prevent memory leaks.
     return () => {
       timers.forEach(clearTimeout);
-      sub.subscription.unsubscribe();
+      sub?.subscription.unsubscribe();
     };
   }, []);
 
