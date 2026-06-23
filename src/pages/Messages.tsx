@@ -50,16 +50,18 @@ export default function Messages() {
 
   const active = conversations.find(c => c.id === activeId) || null;
   const isServiceConv = active?.provider_id != null;
-  const other = active
-    ? role === "tenant"
-      ? (active.provider ?? active.landlord)
-      : active.tenant
-    : null;
-  const peerRoleLabel = active
-    ? role === "tenant"
-      ? isServiceConv ? "Service Provider" : "Landlord"
-      : "Tenant"
-    : "";
+  const getPeer = (conv: ConvRow | null) => {
+    if (!conv || !user) return null;
+    if (conv.tenant_id === user.id) return conv.provider ?? conv.landlord;
+    return conv.tenant;
+  };
+  const getPeerLabel = (conv: ConvRow | null) => {
+    if (!conv || !user) return "";
+    if (conv.tenant_id === user.id) return conv.provider_id ? "Service Provider" : "Landlord";
+    return "Tenant";
+  };
+  const other = getPeer(active);
+  const peerRoleLabel = getPeerLabel(active);
 
   useEffect(() => { clearUnread(); }, [clearUnread, activeId]);
 
@@ -155,11 +157,9 @@ export default function Messages() {
   };
 
   const callPeer = () => {
-    const phone = role === "tenant"
-      ? (active?.provider?.phone ?? active?.landlord?.phone)
-      : active?.tenant?.phone;
-    if (!phone) { toast.info("Phone number not provided"); return; }
-    window.location.href = `tel:${phone}`;
+    const peer = getPeer(active);
+    if (!peer?.phone) { toast.info("Phone number not provided"); return; }
+    window.location.href = `tel:${peer.phone}`;
   };
 
   const respondToAgreement = async (newStatus: "accepted" | "rejected") => {
@@ -194,7 +194,7 @@ export default function Messages() {
             {loadingConvs ? (
               <div className="p-6 text-center"><Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" /></div>
             ) : conversations.map(c => {
-              const peer = role === "tenant" ? c.landlord : c.tenant;
+              const peer = getPeer(c);
               return (
                 <button key={c.id} onClick={() => navigate(`/messages?c=${c.id}`)}
                   className={`w-full text-left p-3 flex items-center gap-3 border-b hover:bg-muted ${activeId === c.id ? "bg-primary-soft" : ""}`}>
