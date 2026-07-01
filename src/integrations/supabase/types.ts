@@ -65,6 +65,131 @@ export type Database = {
           },
         ]
       }
+      buildings: {
+        Row: {
+          amenities: Json | null
+          block_sector: string | null
+          building_type: Database["public"]["Enums"]["building_type"]
+          city_corporation: Database["public"]["Enums"]["city_corp"] | null
+          created_at: string
+          district: string | null
+          division: string | null
+          has_parking: boolean | null
+          has_security: boolean | null
+          holding_number: string | null
+          id: string
+          name: string
+          owner_id: string
+          road_no: string | null
+          thana: string | null
+          total_floors: number | null
+          updated_at: string
+          ward_number: number | null
+          zone: string | null
+        }
+        Insert: {
+          amenities?: Json | null
+          block_sector?: string | null
+          building_type?: Database["public"]["Enums"]["building_type"]
+          city_corporation?: Database["public"]["Enums"]["city_corp"] | null
+          created_at?: string
+          district?: string | null
+          division?: string | null
+          has_parking?: boolean | null
+          has_security?: boolean | null
+          holding_number?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          road_no?: string | null
+          thana?: string | null
+          total_floors?: number | null
+          updated_at?: string
+          ward_number?: number | null
+          zone?: string | null
+        }
+        Update: {
+          amenities?: Json | null
+          block_sector?: string | null
+          building_type?: Database["public"]["Enums"]["building_type"]
+          city_corporation?: Database["public"]["Enums"]["city_corp"] | null
+          created_at?: string
+          district?: string | null
+          division?: string | null
+          has_parking?: boolean | null
+          has_security?: boolean | null
+          holding_number?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          road_no?: string | null
+          thana?: string | null
+          total_floors?: number | null
+          updated_at?: string
+          ward_number?: number | null
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buildings_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_posts: {
+        Row: {
+          author_id: string
+          building_id: string
+          content: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_pinned: boolean | null
+          post_type: string
+          title: string | null
+        }
+        Insert: {
+          author_id: string
+          building_id: string
+          content: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          post_type?: string
+          title?: string | null
+        }
+        Update: {
+          author_id?: string
+          building_id?: string
+          content?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          post_type?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posts_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
@@ -209,6 +334,41 @@ export type Database = {
         }
         Relationships: []
       }
+      emergency_contacts: {
+        Row: {
+          building_id: string
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          role: string
+        }
+        Insert: {
+          building_id: string
+          created_at?: string
+          id?: string
+          name: string
+          phone: string
+          role: string
+        }
+        Update: {
+          building_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_contacts_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
@@ -246,13 +406,16 @@ export type Database = {
           bathrooms: number
           bedrooms: number
           block_sector: string | null
+          building_id: string | null
           building_type: Database["public"]["Enums"]["building_type"]
           city_corporation: Database["public"]["Enums"]["city_corp"]
           created_at: string
           description: string
           district: string | null
           division: string | null
+          floor: string | null
           floor_unit: string | null
+          unit_number: string | null
           geo_location: string | null
           holding_number: string | null
           house_name: string | null
@@ -280,14 +443,17 @@ export type Database = {
           bathrooms?: number
           bedrooms?: number
           block_sector?: string | null
+          building_id?: string | null
           building_type?: Database["public"]["Enums"]["building_type"]
           city_corporation?: Database["public"]["Enums"]["city_corp"]
           created_at?: string
           description?: string
           district?: string | null
           division?: string | null
+          floor?: string | null
           floor_unit?: string | null
           geo_location?: string | null
+          unit_number?: string | null
           holding_number?: string | null
           house_name?: string | null
           id?: string
@@ -314,14 +480,17 @@ export type Database = {
           bathrooms?: number
           bedrooms?: number
           block_sector?: string | null
+          building_id?: string | null
           building_type?: Database["public"]["Enums"]["building_type"]
           city_corporation?: Database["public"]["Enums"]["city_corp"]
           created_at?: string
           description?: string
           district?: string | null
           division?: string | null
+          floor?: string | null
           floor_unit?: string | null
           geo_location?: string | null
+          unit_number?: string | null
           holding_number?: string | null
           house_name?: string | null
           id?: string
@@ -341,7 +510,69 @@ export type Database = {
           ward_number?: number | null
           zone?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "listings_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_requests: {
+        Row: {
+          building_id: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          priority: string
+          status: string
+          tenant_id: string | null
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          building_id: string
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          priority?: string
+          status?: string
+          tenant_id?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          building_id?: string
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: string
+          status?: string
+          tenant_id?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_requests_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_requests_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {

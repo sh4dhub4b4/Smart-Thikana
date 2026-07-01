@@ -1,6 +1,7 @@
 
 ## Goal
 - Deploy the Smart Thikana web app on Render (Level 1) and fix all logical/technical/UI-UX bugs across the codebase.
+- Build real estate ERP features: building management, community ecosystem, landlord tiers, reception/management module.
 
 ## Constraints & Preferences
 - Level 1 deployment: static site on Render, free tier, stateless
